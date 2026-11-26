@@ -1,0 +1,8 @@
+version: 1
+type: web
+build:
+  framework: python
+  install: pip install -e .
+run:
+  command: uvicorn --host 0.0.0.0 --port $PORT backend.modo_local.main:app
+  port: 8000

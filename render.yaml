@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: maclink-homecare-api
+    runtime: python
+    plan: free
+    branch: main
+    rootDir: .
+    buildCommand: "pip install -e ."
+    startCommand: "uvicorn --host 0.0.0.0 --port $PORT backend.modo_local.main:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0

@@ -1,0 +1,32 @@
+[project]
+name = "maclink-homecare"
+version = "0.1.0"
+description = "App de cuidado de idosos — registro, coordenação e prontuário"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "weasyprint>=62",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+]
+ia = [
+    "faster-whisper>=1.0",
+    "vosk>=0.3",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["backend/testes"]
+pythonpath = ["."]

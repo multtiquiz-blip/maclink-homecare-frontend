@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.local
+*.sqlite
+*.db
+backend/dados/*.sqlite
+
+# Modelos de IA (grandes demais para o git)
+backend/ia/modelos/
+*.gguf
+*.bin
+*.onnx
+
+# Frontend
+node_modules/
+frontend/build/
+frontend/.svelte-kit/
+frontend/dist/
+.npm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Segredos
+*.pem
+*.key
