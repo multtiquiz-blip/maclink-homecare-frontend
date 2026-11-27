@@ -8,6 +8,10 @@
 <!-- Fontes locais do sistema: sem dependência de Google Fonts para abrir o aplicativo. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+/* MacLink: a segunda marcação de câmera é uma cópia solta, fora do fluxo de telas.
+   Mantemos todo o HTML original, mas impedimos que essa cópia cubra as demais telas. */
+#main > #s-testes + #s-camera{display:none!important}
+
 :root{--p:#082521;--p2:#0D332E;--p3:#134C44;--p4:#1A7365;--p5:#6FB3A6;--p6:#B6DAD2;--p7:#E9F5F1;
 --ok:#166B3F;--okb:#DAF0E2;--okl:#AFDCC0;--ag:#875600;--agb:#FBEED0;--agl:#E1CB94;
 --inf:#175089;--inb:#DEE9F8;--inl:#ADC7E7;--dg:#A31C15;--dgb:#F9E0DE;--dgl:#E2B2AE;
@@ -351,6 +355,35 @@ body.ev-print #s-relatorio{display:none!important}
 @bottom-left{content:"Registro de cuidado. Não é diagnóstico médico.";font-size:7pt;color:#999}
 @bottom-right{content:"Página " counter(page) " de " counter(pages);font-size:8pt;color:#666}}
 }
+  /* ===== CÂMERA DE VIGILÂNCIA ===== */
+#s-camera .pa2{position:relative;background:#04120F;border-radius:12px;overflow:hidden;aspect-ratio:16/10}
+#s-camera .pa2 video,#s-camera .pa2 img{width:100%;height:100%;object-fit:cover;display:block}
+#s-camera .co2{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--p6);text-align:center;padding:18px;font-size:17px;background:linear-gradient(150deg,#04120F,#0D332E)}
+#s-camera .co2 svg{width:50px;height:50px}
+#s-camera .mv{position:absolute;top:11px;left:11px;background:var(--ag);color:#fff;font-size:16px;font-weight:700;padding:6px 13px;border-radius:99px}
+#s-camera .ct{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+#s-camera input[type=range]{width:100%;height:42px;accent-color:var(--p4)}
+#s-camera .pm{border:3px solid var(--ln);border-radius:13px;padding:13px;margin-top:11px;background:var(--ar)}
+#s-camera .pmh{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+#s-camera .pmh strong{font-size:18px;flex:1;min-width:125px}
+#s-camera .pm[data-p=concedida]{border-color:var(--okl);background:var(--okb)}
+#s-camera .pm[data-p=negada]{border-color:var(--dgl);background:var(--dgb)}
+#s-camera .pm[data-p=solicitando]{border-color:var(--agl);background:var(--agb)}
+#s-camera .pmp{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:16px;margin-top:8px}
+#s-camera .pmp li{display:flex;gap:8px;align-items:flex-start}
+#s-camera .pmp b{width:25px;height:25px;border-radius:8px;background:var(--p3);color:#fff;display:grid;place-items:center;font-size:14px;flex:none}
+#s-camera .pma{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#s-camera .pma .b{flex:1 1 142px;margin:0}
+#s-camera .cd2{background:var(--ar);border:2px solid var(--ln2);border-radius:12px;padding:10px 12px}
+#s-camera .cd2 strong{display:block;font-size:16px;color:var(--p2);margin-bottom:6px}
+#s-camera .cd2 .ap{font-size:14px}
+#s-camera .ln3{display:flex;flex-direction:column;gap:7px;max-height:480px;overflow-y:auto;margin-top:10px;padding-right:3px}
+#s-camera .rg{display:flex;gap:10px;align-items:center;background:var(--pp);border:2px solid var(--ln);border-radius:12px;padding:10px 12px;text-align:left;width:100%;min-height:var(--h);flex-wrap:wrap}
+#s-camera .rgc{flex:1 1 140px;min-width:0}
+#s-camera .rgc strong{display:block;font-size:17px;line-height:1.25}
+#s-camera .rgc span{font-size:15px;color:var(--t2)}
+#s-camera .rgh{text-align:right;flex:none;font-size:19px;font-weight:700}
+#s-camera .vz2{text-align:center;padding:24px 13px;color:var(--t3);font-size:17px}
 </style>
 </head>
 <body>
@@ -528,7 +561,7 @@ body.ev-print #s-relatorio{display:none!important}
 <p class="nt o">Este gráfico vai dentro do PDF, em página paisagem, desenhado em vetor.</p>
 <div class="ac"><button class="b rx" id="bVerGraf">Ver como sai no PDF</button></div></div>
 <div class="cd np"><h2>Liberação do PDF</h2><div id="estFech"></div>
-<div class="sg" id="sgRel" style="margin-top:11px"><button data-rel="plantao" class="on">Por plantão</button><button data-rel="dia">Dia de cuidado</button></div>
+<div class="sg" id="sgRel" style="margin-top:11px"><button data-rel="plantao" class="on">Por plantão</button><button data-rel="dia">Diário</button><button data-rel="semana">Semanal</button><button data-rel="mes">Mensal</button></div>
 <label class="rt" for="motivo">Para que serve esta cópia?</label><select id="motivo" class="cp"><option>Para a família</option><option>Para o médico</option><option>Para a coordenação</option><option>Arquivo da unidade</option></select>
 <label class="sw"><span class="tg"><input type="checkbox" id="marca" checked><i></i></span>Marca de água com quem pediu</label>
 <div class="ac"><button class="b pri" id="bPdf"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Gerar PDF completo</button><button class="b co" id="bPrint">Imprimir</button><button class="b co" id="bBaixar">Baixar</button></div>
@@ -543,7 +576,7 @@ body.ev-print #s-relatorio{display:none!important}
 <div class="cd np"><h2>Envios e cópias</h2><div id="envios"></div></div></div></div></section>
 
 <section class="tl" id="s-camera"><div class="cb"><h1>Vigilância assistiva por câmera</h1><p>Veja o ambiente e receba avisos quando houver mudança relevante na imagem. A confirmação continua sendo humana.</p></div>
-<div class="cd np"><h2>Privacidade e funcionamento</h2><p class="ap">A câmera funciona somente enquanto esta tela estiver aberta e o monitoramento estiver ligado. O processamento é local: o protótipo não grava nem transmite vídeo ou áudio. A câmera e o microfone só funcionam enquanto esta tela permanece aberta; ao sair dela, os dispositivos são desligados. O navegador pode suspender a página em segundo plano.</p>
+<div class="cd np"><h2>Privacidade e funcionamento</h2><p class="ap">A câmera pode ser acessada pelos perfis autorizados (cuidadora, enfermagem, família e coordenação), mediante consentimento registrado. Funciona somente enquanto esta tela estiver aberta e o monitoramento estiver ligado. O processamento é local: este protótipo não grava nem transmite vídeo ou áudio. Ao sair da tela, os dispositivos são desligados. O navegador pode suspender a página em segundo plano.</p>
 <p class="nt a">Limite do protótipo: a câmera detecta mudanças na imagem e movimentos intensos, mas não identifica postura corporal nem confirma quedas. A escuta ambiental opcional detecta apenas som acima de um limiar; não reconhece choro. Os avisos exigem conferência humana.</p>
 <label class="sw"><span class="tg"><input type="checkbox" id="consCam"><i></i></span>Tenho consentimento para monitoramento por imagem</label>
 <label class="sw"><span class="tg"><input type="checkbox" id="consAudio"><i></i></span>Tenho consentimento separado para escuta ambiental (microfone)</label>
@@ -566,6 +599,7 @@ body.ev-print #s-relatorio{display:none!important}
 <section class="tl" id="s-testes"><div class="cb"><h1>Verificação do núcleo</h1><p>Regras de segurança testadas de verdade.</p></div>
 <div class="fr"><button class="b co pq" data-voltar>Voltar</button><button class="b pri pq" id="bRodar">Rodar testes</button></div>
 <div id="resTest" class="rt2">Ainda não rodado.</div><div id="listaTest"></div></section>
+
 </main>
 <nav class="ab" id="abas"></nav>
 
@@ -686,6 +720,139 @@ body.ev-print #s-relatorio{display:none!important}
 <div class="fl2" id="fls" aria-live="polite"></div>
 
 <script>
+  /* ===== CÂMERA DE VIGILÂNCIA ===== */
+var camStream = null;
+var camTimer = null;
+var camQuadroAnt = null;
+var audioStream = null;
+var audioCtx = null;
+var audioAnalyser = null;
+var audioTimer = null;
+
+function camLigar(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    fl("Câmera não disponível neste navegador.","dg");
+    return;
+  }
+  if(!document.getElementById("consCam").checked){
+    fl("Marque o consentimento para monitoramento por imagem.","ag");
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(s){
+    camStream = s;
+    document.getElementById("video").srcObject = s;
+    document.getElementById("camOff").style.display = "none";
+    document.getElementById("bLigarCam").disabled = true;
+    document.getElementById("bDesligarCam").disabled = false;
+    document.getElementById("pmCam").setAttribute("data-p","concedida");
+    document.getElementById("pmCamT").textContent = "concedida";
+    addAud("camera","Câmera ligada");
+    iniciarDeteccao();
+  }).catch(function(e){
+    document.getElementById("pmCam").setAttribute("data-p","negada");
+    document.getElementById("pmCamT").textContent = "negada";
+    document.getElementById("pmCamP").classList.remove("hide");
+    document.getElementById("bPmCamR").classList.remove("hide");
+    fl("Câmera bloqueada: " + e.message,"dg");
+  });
+}
+
+function camDesligar(){
+  if(camStream){camStream.getTracks().forEach(function(t){t.stop();});camStream=null;}
+  if(camTimer){clearInterval(camTimer);camTimer=null;}
+  document.getElementById("camOff").style.display = "grid";
+  document.getElementById("bLigarCam").disabled = false;
+  document.getElementById("bDesligarCam").disabled = true;
+  addAud("camera","Câmera desligada");
+}
+
+function iniciarDeteccao(){
+  var v = document.getElementById("video");
+  var canvas = document.createElement("canvas");
+  canvas.width = 160; canvas.height = 120;
+  var ctx = canvas.getContext("2d");
+  camQuadroAnt = null;
+  camTimer = setInterval(function(){
+    if(!v.videoWidth) return;
+    ctx.drawImage(v,0,0,canvas.width,canvas.height);
+    var d = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    var diff = 0;
+    if(camQuadroAnt){
+      for(var i=0;i<d.length;i+=4){
+        diff += Math.abs(d[i]-camQuadroAnt[i]) + Math.abs(d[i+1]-camQuadroAnt[i+1]) + Math.abs(d[i+2]-camQuadroAnt[i+2]);
+      }
+      diff = diff/(d.length/4)/3;
+      document.getElementById("dif").textContent = "Diferença entre quadros: " + diff.toFixed(1);
+      var sens = parseInt(document.getElementById("sens").value)||8;
+      if(diff > (35 - sens)){
+        document.getElementById("mov").classList.remove("hide");
+        if(typeof E !== "undefined" && E.eventosCam){
+          E.eventosCam.push({id:"ec_"+Date.now(),idoso_id:idosoAtual,ts:Date.now(),tipo:"movimento",descricao:"Movimento intenso (diff "+diff.toFixed(0)+")"});
+          if(E.eventosCam.length>100)E.eventosCam.shift();
+          if(typeof salvar === "function") salvar();
+          renderCamEventos();
+        }
+        setTimeout(function(){document.getElementById("mov").classList.add("hide");},2000);
+      }
+    }
+    camQuadroAnt = d;
+  },1500);
+}
+
+function renderCamEventos(){
+  var el = document.getElementById("evCam");
+  if(!el) return;
+  if(typeof E === "undefined" || !E.eventosCam || !E.eventosCam.length){
+    el.innerHTML = '<div class="vz2">Nenhum evento.</div>';
+    return;
+  }
+  var evs = E.eventosCam.filter(function(e){return e.idoso_id===idosoAtual;}).slice(-15).reverse();
+  el.innerHTML = evs.map(function(e){
+    return '<div class="rg"><div class="rgc"><strong>'+e.descricao+'</strong><span>'+e.tipo+'</span></div><div class="rgh">'+hhmm(e.ts)+'</div></div>';
+  }).join("") || '<div class="vz2">Nenhum evento.</div>';
+}
+
+function audioLigar(){
+  if(!document.getElementById("consAudio").checked){
+    fl("Marque o consentimento para escuta ambiental.","ag");
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(s){
+    audioStream = s;
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    var source = audioCtx.createMediaStreamSource(s);
+    audioAnalyser = audioCtx.createAnalyser();
+    audioAnalyser.fftSize = 256;
+    source.connect(audioAnalyser);
+    document.getElementById("bLigarAudio").disabled = true;
+    document.getElementById("bDesligarAudio").disabled = false;
+    document.getElementById("audioEstado").textContent = "Microfone ativo. Medindo intensidade local.";
+    audioTimer = setInterval(function(){
+      var data = new Uint8Array(audioAnalyser.frequencyBinCount);
+      audioAnalyser.getByteFrequencyData(data);
+      var soma = 0;
+      for(var i=0;i<data.length;i++) soma += data[i];
+      var media = soma/data.length;
+      document.getElementById("audioNivel").style.width = Math.min(100,media*2)+"%";
+    },200);
+    addAud("audio","Escuta ambiental ligada");
+  }).catch(function(e){
+    fl("Microfone bloqueado: "+e.message,"dg");
+  });
+}
+
+function audioDesligar(){
+  if(audioStream){audioStream.getTracks().forEach(function(t){t.stop();});audioStream=null;}
+  if(audioCtx){audioCtx.close();audioCtx=null;}
+  if(audioTimer){clearInterval(audioTimer);audioTimer=null;}
+  document.getElementById("bLigarAudio").disabled = false;
+  document.getElementById("bDesligarAudio").disabled = true;
+  document.getElementById("audioNivel").style.width = "0%";
+  document.getElementById("audioEstado").textContent = "Microfone desligado.";
+  addAud("audio","Escuta ambiental desligada");
+}
+
+/* Implementação legada mantida sem handlers: os controles atuais são ligados pelo núcleo MacLink. */
 "use strict";
 var SEED={usuarios:[
 {id:"u1",nome:"Joana Pereira dos Santos",perfil:"cuidadora",turno:"Noturno 19h as 07h",pin:"1234",cor:"#1A7365",fone:"31988771234",email:"joana.ficticia@exemplo.test"},
@@ -744,7 +911,7 @@ var TERMO2="<h3>1. Quem é quem</h3><p>A clínica ou o profissional liberal é o
 
 var N=(function(){
 function p2(n){return String(n).padStart(2,"0")}
-var M={livre:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],controlado:["tecnico","auxiliar","enfermeiro"],sinais:["tecnico","auxiliar","enfermeiro"],dextro:["enfermeiro"],plano:["enfermeiro"],liberar:["enfermeiro"],pdf:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],enviar:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],camera:["enfermeiro","familia","coordenacao"],estoque:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],auditoria:["enfermeiro","coordenacao"],novoPac:["enfermeiro","coordenacao","familia"]};
+var M={livre:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],controlado:["tecnico","auxiliar","enfermeiro"],sinais:["tecnico","auxiliar","enfermeiro"],dextro:["enfermeiro"],plano:["enfermeiro"],liberar:["enfermeiro"],pdf:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],enviar:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],camera:["cuidadora","enfermeiro","familia","coordenacao"],estoque:["cuidadora","tecnico","auxiliar","enfermeiro","familia","coordenacao"],auditoria:["enfermeiro","coordenacao"],novoPac:["enfermeiro","coordenacao","familia"]};
 function papel(u){if(!u)return null;if(u.perfil==="enfermagem"){if(!u.verificado)return"cuidadora";return u.categoria==="ENF"?"enfermeiro":(u.categoria==="TE"?"tecnico":"auxiliar")}return u.perfil}
 function pode(a,u,c){c=c||{};var p=papel(u);if(!p)return false;var l=M[a];if(!l||l.indexOf(p)<0)return false;
 if(a==="dextro")return p==="enfermeiro"&&u.verificado===true;
@@ -862,7 +1029,7 @@ grip:'<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx=
 cadeado:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'};
 function S(n){return'<svg viewBox="0 0 24 24">'+(IC[n]||IC.doc)+'</svg>'}
 
-var D=null,tela="aceite",voltar="painel",pacAt="p2",pinIn="",pinBl="",escolh=null,tnum="pressao",cnum="sis",vals={},passo=1,rasc=null,avAt=null,vozProp=null,regCorr=null,tipoRel="plantao",vGraf="medico",pdf=null,pdfNome="",pdfInfo=null,wake=null,camOn=false,camStream=null,camTimer=null,qAnt=null,ultMov=0,camAlvo="video",reco=null,avisadas={},subtle=false,dicasAt=[],destSel={},edDest=null,edAlim=null,edVis=null,edItem=null,edTar=null,vfId=null,pergP=null,cadP=null,visTab="tabela",qPac="",qLinha="",fLinha="",fAud="",qCom="",oCom="nome",qVis="",fVis="",termoAt="uso",termoFim=false,acPend=null,ajTxt="",fechCtx=null,vsAlvo=null;
+var D=null,tela="aceite",voltar="painel",pacAt="p2",pinIn="",pinBl="",escolh=null,tnum="pressao",cnum="sis",vals={},passo=1,rasc=null,avAt=null,vozProp=null,regCorr=null,tipoRel="plantao",vGraf="medico",pdf=null,pdfNome="",pdfInfo=null,wake=null,camOn=false,camStream=null,camTimer=null,qAnt=null,ultMov=0,camAlvo="video",reco=null,avisadas={},subtle=false,dicasAt=[],destSel={},edDest=null,edAlim=null,edVis=null,edItem=null,edTar=null,vfId=null,pergP=null,pergTaskId=null,taskNumId=null,cadP=null,visTab="tabela",qPac="",qLinha="",fLinha="",fAud="",qCom="",oCom="nome",qVis="",fVis="",termoAt="uso",termoFim=false,acPend=null,ajTxt="",fechCtx=null,vsAlvo=null;
 var Cam={stream:null,facing:"user",devs:[],di:0,dados:null,modo:"plantao",perm:"desconhecida",motivo:"",cap:false};
 var frTaskId=null,fraldaWarned=false,persistWarned=false;
 var audioStream=null,audioCtx=null,audioAnalyser=null,audioTimer=null,ultimoSom=0;
@@ -963,7 +1130,7 @@ function wakeOn(){if(!("wakeLock"in navigator))return Promise.resolve();return n
 function inat(){return}function inatLegado(){if(!D.sessao||semId())return;var m=document.getElementById("mdBloq");if(!m)return;if(now()-(D.sessao.ult||now())>cfg().minInatividade*6e4&&!m.classList.contains("on")){pinBl="";rBlq();abrir("mdBloq")}}
 function limFotos(){var n=D.fotos.length;D.fotos=D.fotos.filter(function(f){return now()-f.ts<cfg().diasFoto*864e5});if(D.fotos.length!==n)save()}
 function abas(){if(!D.sessao)return[{id:"entrada",n:"Entrar",ic:"casa"}];if(semId())return[{id:"agora",n:"Agora",ic:"casa"}];var p=papel();
-if(p==="cuidadora")return[{id:"agora",n:"Agora",ic:"casa"},{id:"visitas",n:"Agendamentos",ic:"cal"},{id:"numeros",n:"Números",ic:"bp"},{id:"evolucao",n:"Evolução",ic:"chart"},{id:"estoque",n:"Inventário",ic:"box"},{id:"relatorio",n:"Relatório",ic:"doc"},{id:"passagem",n:"Passar",ic:"pass"}];
+if(p==="cuidadora")return[{id:"agora",n:"Agora",ic:"casa"},{id:"visitas",n:"Agendamentos",ic:"cal"},{id:"numeros",n:"Números",ic:"bp"},{id:"evolucao",n:"Evolução",ic:"chart"},{id:"estoque",n:"Inventário",ic:"box"},{id:"relatorio",n:"Relatório",ic:"doc"},{id:"passagem",n:"Passar",ic:"pass"},{id:"camera",n:"Câmera",ic:"cam"}];
 if(p==="tecnico"||p==="auxiliar")return[{id:"painel",n:"Painel",ic:"painel"},{id:"agora",n:"Agora",ic:"casa"},{id:"visitas",n:"Agendamentos",ic:"cal"},{id:"numeros",n:"Números",ic:"bp"},{id:"evolucao",n:"Evolução",ic:"chart"},{id:"estoque",n:"Inventário",ic:"box"},{id:"relatorio",n:"Relatório",ic:"doc"}];
 if(p==="familia")return[{id:"painel",n:"Painel",ic:"painel"},{id:"visitas",n:"Agendamentos",ic:"cal"},{id:"evolucao",n:"Evolução",ic:"chart"},{id:"estoque",n:"Inventário",ic:"box"},{id:"relatorio",n:"Relatório",ic:"doc"},{id:"camera",n:"Câmera",ic:"cam"}];
 if(p==="coordenacao")return[{id:"painel",n:"Painel",ic:"painel"},{id:"visitas",n:"Agendamentos",ic:"cal"},{id:"evolucao",n:"Evolução",ic:"chart"},{id:"estoque",n:"Inventário",ic:"box"},{id:"relatorio",n:"Relatório",ic:"doc"},{id:"camera",n:"Câmera",ic:"cam"},{id:"auditoria",n:"Auditoria",ic:"escudo"}];
@@ -992,7 +1159,7 @@ function regAceite(){var txt=termoAt==="uso"?TERMO1:TERMO2,tit=termoAt==="uso"?"
 D.aceites.push({id:uid("ac"),ts:now(),usuario:u?u.id:null,nome:u?u.nome:nomeAt(),termo:termoAt,versao:cfg().versaoTermo,hash:sha(new TextEncoder().encode(txt)),foto:Cam.dados,semFoto:!Cam.dados,motivo:Cam.dados?null:(Cam.motivo||"câmera não utilizada"),scroll:true});
 aud("aceite",tit+" por "+(u?u.nome:nomeAt())+(Cam.dados?" com foto":" SEM FOTO"),!Cam.dados);save();beep("ok");
 if(termoAt==="uso"){termoAt="priv";rAceite();toast("Termo de Uso registrado. Agora a Política de Privacidade.");falar("Agora a política de privacidade.",true)}
-else{toast("Aceites registrados. Bem-vindo.");falar("Bem-vindo.",true);ir("entrada")}}
+else{toast("Aceites registrados. Bem-vindo.");falar("Bem-vindo.",true);var novo=U(acPend);if(novo){novo.cadastroPendenteContrato=false;save()}acPend=null;if(window.lgContinuarAposContrato){window.lgContinuarAposContrato();return}ir("entrada")}}
 function rFotos(){var h=document.getElementById("fotos");if(!h)return;
 h.innerHTML=D.usuarios.map(function(u){return'<button class="'+(escolh===u.id?"on":"")+'" data-u="'+u.id+'"><img src="'+av(u.nome,u.cor)+'" alt=""><strong>'+E(u.nome.split(" ").slice(0,2).join(" "))+'</strong><small>'+E(N.papel(u)||u.perfil)+'</small></button>'}).join("");
 var u=U(escolh);ST("pinTxt",u?"Olá, "+u.nome.split(" ")[0]+". Digite seus 4 números.":"Escolha a sua foto primeiro.");
@@ -1084,7 +1251,7 @@ var cat=null;if(e){var v=N.coren(V("cCor"));if(!v.ok)return err(v.motivo);cat=v.
 var ch=Promise.resolve(),dup=false;D.usuarios.forEach(function(u){ch=ch.then(function(){return hp(pin,u.pinSal).then(function(h){if(h===u.pinHash)dup=true})})});
 ch.then(function(){if(dup)return err("Este PIN já é de outra pessoa.");var s=sal();return hp(pin,s).then(function(h){
 var cores={enfermagem:"#175089",cuidadora:"#1A7365",familia:"#443886",coordenacao:"#134C44"};
-var u={id:uid("u"),nome:nome,perfil:cadP,categoria:cat,coren:e?V("cCor").trim().toUpperCase():null,cpf:e?V("cCpf").replace(/\D/g,""):null,verificado:false,parentesco:V("cPar").trim(),turno:V("cTurno").trim()||"A combinar",cor:cores[cadP],fone:V("cFone").replace(/\D/g,""),email:V("cMail").trim(),pinSal:s,pinHash:h,tent:0,blq:0};
+var u={id:uid("u"),nome:nome,perfil:cadP,categoria:cat,coren:e?V("cCor").trim().toUpperCase():null,cpf:e?V("cCpf").replace(/\D/g,""):null,verificado:false,parentesco:V("cPar").trim(),turno:V("cTurno").trim()||"A combinar",cor:cores[cadP],fone:V("cFone").replace(/\D/g,""),email:V("cMail").trim(),pinSal:s,pinHash:h,tent:0,blq:0,cadastroPendenteContrato:true};
 D.usuarios.push(u);D.vinculos.push({usuario:u.id,paciente:V("cPac"),papel:cadP,ativo:true});
 if(u.fone||u.email)D.destinatarios.push({id:uid("d"),nome:u.nome,papel:cadP==="familia"?"familiar":"extra",fone:u.fone,email:u.email,consent:false});
 aud("cadastro","Novo usuário: "+nome);save();beep("ok");toast("Cadastro criado.");
@@ -1132,7 +1299,7 @@ if(!l.length){h.innerHTML='<p class="vz2">Nenhuma tarefa com hora marcada.</p>';
 h.innerHTML=l.map(function(t){var s=sit(t),c=PECAS[t.peca]||{ic:"doc"},r=s==="feito"?"já fiz":s==="atrasado"?"passou da hora":s==="agora"?"é agora":"esperando";
 return'<div class="tk" data-s="'+s+'" data-o="'+(t.origem||"plano")+'"><div class="tkc"><span class="tki">'+S(c.ic)+'</span><div><div class="tkh">'+t.hora+'</div><div class="tkn">'+E(t.nome)+'</div></div></div>'+
 (t.origem==="reafericao"?'<span class="tg2 v">Reaferição</span>':"")+(t.obs?'<div class="tko">'+E(t.obs)+'</div>':"")+'<span class="si '+s+'">'+r+'</span>'+
-(s==="feito"?'<button class="b co" disabled>Já fiz</button>':'<button class="b pri" data-feito="'+t.id+'">Já fiz</button>')+'<button class="cm" data-ajuda="'+t.id+'">Como fazer</button></div>'}).join("")}
+(s==="feito"?'<button class="b co" disabled>Confirmar atividade</button>':'<button class="b pri" data-feito="'+t.id+'">Confirmar atividade</button>')+'<button class="cm" data-ajuda="'+t.id+'">Como fazer</button></div>'}).join("")}
 function atras(ts){var m=Math.max(0,Math.round((now()-ts)/6e4));if(m<1)return"agora";if(m<60)return"há "+m+" min";return"há "+Math.floor(m/60)+"h"+(m%60?p2(m%60):"")}
 function estPeca(k){var pl=plano(),u=usr(),c=PECAS[k];if(!c)return"oculto";
 if(c.soEnf)return N.pode("dextro",u)?"ativo":"soenf";if(c.nivel==="privativo")return N.pode("sinais",u,{plano:pl,medida:k})?"ativo":"trav";
@@ -1155,7 +1322,8 @@ return'<button class="ev" data-reg="'+r.id+'"><span class="evi">'+S(c.ic)+'</spa
 var PERG={comida:["Quanto ela comeu?",[["tudo","Comeu tudo"],["metade","Metade"],["pouco","Pouco"],["nada","Não comeu"]]],agua:["Quanta água?",[["copo","Um copo"],["meio","Meio copo"],["gole","Só um gole"]]],
 fralda:["O que tinha?",[["xixi","Xixi"],["cocô","Cocô"],["os dois","Os dois"],["limpa","Só conferi"]]],posicao:["Para que lado?",[["esquerdo","Esquerdo"],["direito","Direito"],["cima","Barriga para cima"]]],
 sono:["O que aconteceu?",[["Dormiu","Dormiu"],["Acordou","Acordou"]]],passeio:["Como foi?",[["quintal","Quintal"],["sala","Sala"],["cadeira","Cadeira de rodas"]]],
-banho:["Como foi o banho?",[["na cama","Na cama"],["no chuveiro","No chuveiro"],["assistido","Assistido"],["recusou","Recusou"]]]};
+banho:["Como foi o banho?",[["na cama","Na cama"],["no chuveiro","No chuveiro"],["assistido","Assistido"],["recusou","Recusou"]]],
+remedio:["Confirme o resultado da medicação:",[["administrado","Administrada conforme prescrição"],["recusado","Paciente recusou"],["nao_administrado","Não administrada — registrar motivo"]]]};
 function abrirFralda(taskId){frTaskId=taskId||null;SV("frAchado","seca");SV("frTroca","nao");SV("frObs","");abrir("mdFralda")}
 function salvarFralda(){var ach=V("frAchado"),troca=V("frTroca")==="sim",obs=V("frObs").trim(),labels={seca:"Seca ou limpa",urina:"Presença de urina",fezes:"Presença de fezes",urina_e_fezes:"Urina e fezes",nao_verificada:"Não foi possível verificar"};var dados={schema:"maclink.homecare.diaper-check.v1",finding:ach,changed:troca,observedAt:now(),observerId:(D.sessao&&D.sessao.usuarioId)||null,notes:obs};reg({tipo:"fralda",texto:"Verificação da fralda: "+labels[ach],valor:"Troca efetiva: "+(troca?"Sim":"Não")+(obs?". "+obs:""),origem:"verificacao_fr"+(frTaskId?"_agenda":""),dados:dados});if(troca)baixaUmaFralda("Troca efetivamente realizada após verificação");if(frTaskId){var tk=null;tars().forEach(function(x){if(x.id===frTaskId)tk=x});if(tk)D.feitos[kf(tk)]=now();save();rTarefas();rAbas();rPainel()}fechar("mdFralda");frTaskId=null;beep("ok");toast(troca?"Verificação e troca registradas.":"Verificação registrada. Nenhum estoque foi baixado.");if(D.voz.conf)falar("Verificação da fralda de "+nomeF()+" registrada. "+(troca?"Troca realizada.":"Sem troca."),true)}
 function tocaPeca(k){var c=PECAS[k];if(!c)return;if(k==="fralda"){abrirFralda();return}var s=estPeca(k);
@@ -1164,6 +1332,7 @@ if(s==="trav"){abrirPed(k);return}
 if(c.tipo==="perigo"){abrirEmerg();return}
 if(c.tipo==="num"){tnum=k;vals={};cnum=CAMPOS[k][0][0];ir("numeros");return}
 if(k==="dor"){abrirDor();return}if(k==="humor"){abrirHumor();return}
+if(k==="remedio"){pergP="remedio";pergTaskId=null;ST("pergTit",PERG.remedio[0]+" - "+nomePac());SH("pergOps",PERG.remedio[1].map(function(o){return'<button class="b co" data-op="'+E(o[0])+'">'+E(o[1])+'</button>'}).join(""));abrir("mdPerg");return}
 if(PERG[k]){pergP=k;ST("pergTit",PERG[k][0]+" - "+nomePac());SH("pergOps",PERG[k][1].map(function(o){return'<button class="b co" data-op="'+E(o[0])+'">'+E(o[1])+'</button>'}).join(""));abrir("mdPerg");return}
 reg({tipo:k,texto:c.nome});baixa(k);beep("ok");toast(c.nome+" registrado.");if(D.voz.conf)falar(c.nome+" de "+nomeF()+" registrado.",true)}
 function abrirPed(pre){var op=Object.keys(PECAS).filter(function(k){return PECAS[k].nivel==="controlado"||(PECAS[k].nivel==="privativo"&&!PECAS[k].soEnf)});
@@ -1185,9 +1354,10 @@ DS("bSalvarNum",!ok);rMed()}
 function rMed(){var e=document.getElementById("medidas");if(!e)return;
 var l=D.registros.filter(function(r){return !r.excluido&&r.paciente===pacAt&&["pressao","oxigenio","temperatura","dextro"].indexOf(r.tipo)>=0}).slice(0,10);
 e.innerHTML=l.length?l.map(function(r){return'<button class="rg" data-reg="'+r.id+'"><span class="rgi">'+S(PECAS[r.tipo].ic)+'</span><span class="rgc"><strong>'+E(r.valor)+'</strong><span>'+E(r.autor)+'</span></span><span class="rgh">'+hm(r.ts)+'</span></button>'}).join(""):'<p class="vz2">Nenhuma medida anotada.</p>'}
+function marcarTarefaFeita(id){if(!id)return false;var alvo=null;(D.tarefas[pacAt]||[]).forEach(function(t){if(t.id===id)alvo=t});if(!alvo)return false;D.feitos[kf(alvo)]=now();save();rTarefas();rAbas();rPainel();return true}
 function salvarNum(){if(!N.peca(tnum,usr(),plano())){aud("negado","Medida "+tnum,true);toast("Sem permissão.","ag");return}
 var r=N.avaliar(tnum,vals,plano().limites);if(r.erro){beep("ag");toast(r.erro,"ag");return}
-var g=reg({tipo:tnum,texto:r.texto,valor:r.valor,nums:r.nums});vals={};cnum=CAMPOS[tnum][0][0];rNum();
+var g=reg({tipo:tnum,texto:r.texto,valor:r.valor,nums:r.nums});if(taskNumId){marcarTarefaFeita(taskNumId);taskNumId=null}vals={};cnum=CAMPOS[tnum][0][0];rNum();
 if(r.fora){avAt=novoAv("medida fora do limite",r.motivo+" - "+r.valor);beep("dg");toast(r.motivo+". "+N.estado(avAt,D.usuarios),"dg",null,9000);falar("Atenção. "+r.motivo+" em "+nomeF()+".",true);reaf(tnum,g);abrirEmerg()}
 else if(r.semLimite){beep("ag");toast("Guardado. Avise a enfermagem: limite não definido.","ag",null,8000);falar("Número guardado. Limite não definido.",true)}
 else{beep("ok");toast(r.texto+": "+r.valor+" guardado.");if(D.voz.conf)falar(r.texto+" de "+nomeF()+", "+r.valor+", registrado.",true)}}
@@ -1391,16 +1561,27 @@ doc.setFontSize(6.5);T("#61746F");ex.forEach(function(t){doc.text(hm(t),X(t),H-r
 doc.setFontSize(6);var lg=[["#A31C15","SIS / fora"],["#175089","DIA"],["#134C44","medidas"],["#875600","dor leve"],["#734413","dor media"],["#443886","humor/sono"],["#166B3F","no limite"],["#0A6273","camera"]],lx=M;
 lg.forEach(function(l){F(l[0]);doc.rect(lx,H-rod+13,3,3,"F");T("#425651");doc.text(l[1],lx+4.5,H-rod+15.6);lx+=doc.getTextWidth(l[1])+11});
 T("#61746F");doc.text("Dados e condutas registradas. Nao sugere diagnostico. Quem interpreta e o medico.",M,H-rod+22)}
-function plRel(){return D.plantoes.filter(function(x){return x.paciente===pacAt&&x.fechado&&(tipoRel==="dia"?x.dia===diaAt():true)}).sort(function(a,b){return a.inicio-b.inicio})}
+function faixaRel(){
+var fim=diaAt(),d=new Date(fim+"T12:00:00"),ini=fim;
+if(tipoRel==="semana"){var wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd);ini=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+else if(tipoRel==="mes")ini=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-01";
+return{ini:ini,fim:fim}
+}
+function plRel(){var f=faixaRel();return D.plantoes.filter(function(x){
+if(x.paciente!==pacAt||!x.fechado)return false;
+if(tipoRel==="dia")return x.dia===diaAt();
+if(tipoRel==="semana"||tipoRel==="mes")return x.dia>=f.ini&&x.dia<=f.fim;
+return true
+}).sort(function(a,b){return a.inicio-b.inicio})}
 function regsRel(){var ps=plRel();if(tipoRel==="dia")return regsDia();if(!ps.length)return[];
 return D.registros.filter(function(r){return !r.excluido&&r.paciente===pacAt&&ps.some(function(p){return r.ts>=p.inicio&&r.ts<=p.fim})})}
 function txtRel(){var p=pac(),pl=plano(),ps=plRel(),rs=regsRel(),e=U(pl.definidoPor),L=[];
 L.push("===============================================");L.push("  PRONTUARIO DE CUIDADO - MacLink HomeCare");L.push("===============================================");L.push("");
 L.push("PACIENTE");L.push("Nome: "+p.nome+"    Idade: "+p.idade);L.push("Quarto: "+p.quarto);L.push("Alergias: "+p.alergia);L.push("Dieta: "+p.dieta);L.push("Situacao: "+p.obs);
-L.push("");L.push("PERIODO");L.push(N.rotDia(now(),cfg().inicioDia));L.push("Tipo: "+(tipoRel==="plantao"?"Por plantao":"Dia de cuidado"));L.push("");L.push("PROFISSIONAIS - DADOS E CONTATO");
+L.push("");L.push("PERIODO");var fx=faixaRel();L.push(tipoRel==="plantao"?"Período: plantões fechados disponíveis": "Período: "+new Date(fx.ini+"T12:00:00").toLocaleDateString("pt-BR")+" a "+new Date(fx.fim+"T12:00:00").toLocaleDateString("pt-BR"));L.push("Tipo: "+({plantao:"Por plantão",dia:"Diário",semana:"Semanal",mes:"Mensal"}[tipoRel]||"Relatório"));L.push("");L.push("PROFISSIONAIS - DADOS E CONTATO");
 if(ps.length)ps.forEach(function(x){var u=U(x.usuarioId)||{};L.push("+--------------------------------------------");L.push("| "+x.nome);
 L.push("| Funcao: "+(x.perfil||"-")+(x.coren?" "+x.coren:""));L.push("| Telefone: "+(x.fone||u.fone||"nao informado"));L.push("| E-mail: "+(x.email||u.email||"nao informado"));
-L.push("| Duracao registrada internamente: "+N.dur(x.durMin));
+
 L.push("| Conferencia: "+(x.semFoto?"sem foto":"com foto"));
 if(x.antecipado){L.push("| Motivo: "+x.motivoTxt);if(x.autorizou)L.push("| Autorizado por: "+x.autorizou+" ("+x.vinculo+")");L.push("| Justificativa: "+x.justificativa)}
 L.push("| Assinatura: "+x.assinatura.hash);L.push("| Assinado em "+new Date(x.assinatura.ts).toLocaleString("pt-BR"));L.push("+--------------------------------------------")});
@@ -1436,103 +1617,197 @@ L.push("");L.push("INVENTARIO");est().forEach(function(s){L.push("  "+s.nome+": 
 D.movimentos.filter(function(m){return m.paciente===pacAt}).slice(0,12).reverse().forEach(function(m){L.push("    "+hm(m.ts)+" "+m.item+" "+m.tipo+" "+m.qtd)});
 L.push("");L.push("PASSAGEM");D.passagens.filter(function(x){return x.paciente===pacAt}).slice(0,3).forEach(function(x){L.push("  "+x.de+" as "+hm(x.ts)+(x.lida?" lida":" aguardando"))});
 L.push("");L.push("ENCERRAMENTO E ASSINATURA");
-if(ps.length)ps.forEach(function(x){L.push("  "+x.nome+" "+(x.fone||"sem telefone"));L.push("  Inicio "+hm(x.inicio)+" previsto "+hm(x.fimPrev)+" real "+hm(x.fim));
-L.push("  "+(x.antecipado?"ENCERRADO ANTES DO HORARIO ("+N.dur(Math.abs(x.minDif))+")":"No horario previsto"));
+if(ps.length)ps.forEach(function(x){L.push("  "+x.nome+" "+(x.fone||"sem telefone"));L.push("  Plantão encerrado e assinado.");
+L.push("  "+(x.antecipado?"ENCERRAMENTO ANTECIPADO":"ENCERRAMENTO CONCLUÍDO"));
 if(x.antecipado){L.push("  Motivo: "+x.motivoTxt);if(x.autorizou)L.push("  Autorizado por: "+x.autorizou);L.push("  Justificativa: "+x.justificativa)}
 L.push("  PIN confirmado. "+x.assinatura.regs+" registros assinados");L.push("  SHA-256: "+x.assinatura.hash)});else L.push("  (nenhum)");
 L.push("");L.push("-----------------------------------------------");L.push("Registro de cuidado, nao controle de jornada.");L.push("Nao substitui o ponto do empregador (Portaria 671/2021).");L.push("Nao constitui diagnostico. Quem define limites e a enfermagem.");L.push("MacLink ID: "+sha(new TextEncoder().encode(L.join("|"))).slice(0,16));return L.join("\n")}
-function pdfOk(){var ps=plRel();if(tipoRel==="plantao")return ps.length>0;return ps.length>0&&!D.plantoes.some(function(x){return x.paciente===pacAt&&!x.fechado&&x.dia===diaAt()})}
+function pdfOk(){var ps=plRel();if(tipoRel==="plantao")return ps.length>0;
+var f=faixaRel();return ps.length>0&&!D.plantoes.some(function(x){return x.paciente===pacAt&&!x.fechado&&x.dia>=f.ini&&x.dia<=f.fim})}
 function rRel(){var el=document.getElementById("s-relatorio");if(!el||!el.classList.contains("on"))return;ST("previaTxt",txtRel());var ok=pdfOk();
 var ab=D.plantoes.filter(function(x){return x.paciente===pacAt&&!x.fechado}).length;
 SH("estFech",ok?'<p class="nt o">Plantão fechado e assinado. O PDF está liberado com dados, telefone e assinatura.</p>':'<p class="nt a">'+(ab?"Plantão em andamento. Feche e assine para liberar o PDF.":"Nenhum plantão fechado neste período.")+'</p>');
 ["bPdf","bPrint","bBaixar","bWaPdf","bMailPdf"].forEach(function(i){DS(i,!ok)});
 ST("estPdf",pdf?"PDF pronto: "+pdfNome+" ("+Math.round(pdf.size/1024)+" KB) "+pdfInfo.paginas+" páginas, gráfico na "+pdfInfo.pagGraf+".":"Nenhum PDF gerado.");
 var e=document.getElementById("estPdf");if(e)e.className="nt "+(pdf?"o":"i");
-SH("pags",pdfInfo?["1 Capa e telefone","2 Resumo e jornada","3 GRÁFICO 10 faixas","4 Alimentação e medicação","5 Sinais dor humor sono","6 Obs médico e cuidadora","7 Avisos e inventário","8 Assinatura"].map(function(t,i){return'<span'+(i===2?' style="background:var(--p3);color:#fff;border-color:var(--p3)"':"")+'>'+t+'</span>'}).join(""):"");
+SH("pags",pdfInfo?["Identificação e profissionais","Resumo e evolução cronológica","Gráfico de acompanhamento","Alimentação, medicação e higiene","Sinais vitais, dor, humor e sono","Observações profissionais","Avisos, inventário e passagem","Encerramento e assinatura"].map(function(t,i){return'<span'+(i===2?' style="background:var(--p3);color:#fff;border-color:var(--p3)"':"")+'>'+t+'</span>'}).join(""):"");
 rDests();rGraf();linkWa();SH("envios",D.envios.length?D.envios.slice(0,12).map(function(x){return'<div class="lm"><span>'+E(x.canal)+" - "+E(x.para)+'<br><small>'+E(x.por)+'</small></span><span>'+hm(x.ts)+(x.conf?" ok":" aberto")+'</span></div>'}).join(""):'<p class="vz2">Nenhum envio.</p>')}
 function rDests(){var h=document.getElementById("dests");if(!h)return;
 if(!D.destinatarios.length){h.innerHTML='<p class="vz2">Nenhum destinatário.</p>';return}
 h.innerHTML=D.destinatarios.map(function(d){var on=!!destSel[d.id],cor=d.papel==="empresa"?"#175089":d.papel==="medico"?"#134C44":d.papel==="extra"?"#734413":"#443886";
 return'<div class="ds'+(on?" on":"")+(d.consent?"":" sm")+'" data-dest="'+d.id+'"><span class="dsa" style="background:'+cor+'">'+E(d.nome[0])+'</span><div class="dsc"><strong>'+E(d.nome)+'</strong><span>'+E({familiar:"Familiar responsável",empresa:"Empresa",medico:"Médico",extra:"Contato extra"}[d.papel])+'</span><div class="ca">'+(d.fone?'<span class="cn2">WhatsApp '+E(d.fone)+'</span>':"")+(d.email?'<span class="cn2">'+E(d.email)+'</span>':"")+(d.consent?'<span class="cn2" style="background:var(--okb);color:var(--ok)">autorizou</span>':'<span class="cn2" style="background:var(--dgb);color:var(--dg)">sem autorização</span>')+'</div></div><button class="ic pq" data-eddest="'+d.id+'">'+S("lapis")+'</button></div>'}).join("")}
-function gerarPdf(){if(!pdfOk()){beep("ag");toast("Feche e assine o plantão para liberar o PDF.","ag");return null}
-var J=window.jspdf&&window.jspdf.jsPDF;if(!J){toast("Biblioteca de PDF não carregou. Use Imprimir e escolha Salvar como PDF.","ag",null,9000);return null}
-var doc=new J({unit:"pt",format:"a4",orientation:"portrait"}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=40;
-var p=pac(),pl=plano(),ps=plRel(),rs=regsRel(),usarM=GC("marca");
-function mk(){if(!usarM)return;try{doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:.07}));doc.setFont("helvetica","bold");doc.setFontSize(40);doc.setTextColor(26,115,101);doc.text("COPIA "+nomeAt().toUpperCase(),W/2,H/2,{align:"center",angle:32});doc.restoreGraphicsState()}catch(e){}}
-var y=M;function tx(l,s,st,cor){s=s||8.6;st=st||"normal";cor=cor||"#172320";doc.setFont("courier",st);doc.setFontSize(s);var c=rgb(cor);doc.setTextColor(c[0],c[1],c[2]);
-doc.splitTextToSize(l||" ",W-M*2).forEach(function(x){if(y>H-56){doc.addPage();mk();y=M}doc.text(x,M,y);y+=s*1.24})}
-function se(t){y+=5;tx(t,9.6,"bold","#134C44")}
-function np(t){doc.addPage();mk();y=M;doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(8,37,33);doc.text(t,M,y);y+=18}
-mk();doc.setFont("helvetica","bold");doc.setFontSize(17);doc.setTextColor(8,37,33);doc.text("PRONTUARIO DE CUIDADO",M,y);y+=20;
-doc.setFontSize(11);doc.setTextColor(26,115,101);doc.text("MacLink HomeCare",M,y);y+=8;doc.setDrawColor(26,115,101);doc.setLineWidth(1.2);doc.line(M,y,W-M,y);y+=18;
-se("PACIENTE");tx("Nome: "+p.nome+"    Idade: "+p.idade);tx("Quarto: "+p.quarto);tx("Alergias: "+p.alergia);tx("Dieta: "+p.dieta);tx("Situacao: "+p.obs);
-se("PERIODO");tx(N.rotDia(now(),cfg().inicioDia));tx("Tipo: "+(tipoRel==="plantao"?"Por plantao":"Dia de cuidado"));
-se("PROFISSIONAIS - DADOS E CONTATO");
-if(ps.length)ps.forEach(function(x){var u=U(x.usuarioId)||{};tx("Nome: "+x.nome,8.6,"bold");tx("  Funcao: "+(x.perfil||"-")+(x.coren?" "+x.coren:""));
-tx("  Telefone: "+(x.fone||u.fone||"nao informado"),8.6,"bold","#134C44");tx("  E-mail: "+(x.email||u.email||"nao informado"));
-tx("  Duracao registrada internamente: "+N.dur(x.durMin));
-tx("  Conferencia: "+(x.semFoto?"sem foto":"com foto"));
-if(x.antecipado){tx("  Motivo: "+x.motivoTxt,8.6,"bold","#875600");if(x.autorizou)tx("  Autorizado por: "+x.autorizou+" ("+x.vinculo+")");tx("  Justificativa: "+x.justificativa)}
-tx("  Assinatura: "+x.assinatura.hash.slice(0,32));y+=3});else tx("(nenhum plantao fechado)");
-var e=U(pl.definidoPor);if(e){se("ENFERMEIRO RESPONSAVEL");tx(e.nome+" "+(e.coren||"")+" Telefone: "+(e.fone||"nao informado"))}
-se("EMISSAO");tx("Gerado por: "+nomeAt());tx("Em: "+new Date().toLocaleString("pt-BR"));tx("Finalidade: "+V("motivo"));
-np("RESUMO E JORNADA COMPLETA");var G=dg(),fora=G.regs.filter(function(r){return r.nums&&N.avaliar(r.tipo,r.nums,G.L).fora}).length;
-tx(rs.length+" registros. "+tars().filter(feito).length+" de "+tars().length+" tarefas concluidas.");tx(fora+" valor(es) fora do limite.");
-se("JORNADA - TUDO EM ORDEM DE HORA");
-if(rs.length)rs.slice().sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx(hm(r.ts)+"  ["+((PECAS[r.tipo]&&PECAS[r.tipo].nome)||r.tipo)+"]  "+r.texto+(r.valor?" - "+r.valor:"")+"  ("+r.autor+")",7.8);
-if(r.corrigido)r.historico.forEach(function(h){tx("      corrigido por "+h.autor+" motivo: "+h.motivo,7,"normal","#875600")})});else tx("(nenhum)");
-doc.addPage("a4","landscape");var pg=doc.internal.getNumberOfPages();
-try{if(usarM){doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:.06}));doc.setFont("helvetica","bold");doc.setFontSize(46);doc.setTextColor(26,115,101);doc.text("COPIA "+nomeAt().toUpperCase(),doc.internal.pageSize.getWidth()/2,doc.internal.pageSize.getHeight()/2,{align:"center",angle:24});doc.restoreGraphicsState()}}catch(er){}
-grafPdf(doc);
-doc.addPage("a4","portrait");mk();y=M;doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(8,37,33);doc.text("ALIMENTACAO, MEDICACAO E HIGIENE",M,y);y+=18;
-se("ALIMENTACAO E HIDRATACAO");["comida","agua"].forEach(function(k){var l=rs.filter(function(r){return r.tipo===k});tx(PECAS[k].nome+" ("+l.length+"):",8.6,"bold");
-if(l.length)l.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("   "+hm(r.ts)+"  "+r.texto+(r.valor?" - "+r.valor:""),7.8)});else tx("   nenhum",7.8)});
-tx("PODE: "+(com().filter(function(c){return c.pode}).map(function(c){return c.nome}).join(", ")||"-"),7.8,"normal","#166B3F");
-tx("NAO PODE: "+(com().filter(function(c){return!c.pode}).map(function(c){return c.nome}).join(", ")||"-"),7.8,"normal","#A31C15");
-se("MEDICACAO");tars().filter(function(t){return t.peca==="remedio"}).forEach(function(t){tx("PREVISTO "+t.hora+" "+(feito(t)?"[ADMINISTRADO]":"[PENDENTE]")+" "+t.nome,7.8,"normal",feito(t)?"#166B3F":"#875600")});
-rs.filter(function(r){return r.tipo==="remedio"}).sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("REGISTRADO "+hm(r.ts)+"  "+r.texto+(r.valor?" - "+r.valor:""),7.8)});
-se("HIGIENE E CONFORTO");["banho","fralda","posicao"].forEach(function(k){var l=rs.filter(function(r){return r.tipo===k});tx(PECAS[k].nome+" ("+l.length+"):",8.6,"bold");
-if(l.length)l.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("   "+hm(r.ts)+"  "+r.texto+(r.valor?" - "+r.valor:""),7.8)});else tx("   nenhum",7.8)});
-np("SINAIS VITAIS, DOR, HUMOR E SONO");se("SINAIS VITAIS");var md2=rs.filter(function(r){return r.nums});
-if(md2.length)md2.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){var av2=N.avaliar(r.tipo,r.nums,pl.limites);tx(hm(r.ts)+"  "+PECAS[r.tipo].nome+"  "+r.valor,7.8,"bold",av2.fora?"#A31C15":"#172320");
-tx("      limite: "+(av2.semLimite?"nao definido":"definido")+" conduta: "+(av2.fora?"FORA aviso e reafericao":av2.semLimite?"avisar enfermagem":"dentro do limite"),7.2)});else tx("(nenhuma)");
-se("DOR");var dl=rs.filter(function(r){return typeof r.dor==="number"});
-if(dl.length)dl.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("   "+hm(r.ts)+"  "+r.dor+"/10 ("+rotDor(r.dor)+") "+(r.valor||""),7.8,"normal",corDor(r.dor))});else tx("   (nenhuma)");
-se("HUMOR");var hl=rs.filter(function(r){return typeof r.humor==="number"});if(hl.length)hl.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("   "+hm(r.ts)+"  "+r.humor+"/5 "+(r.valor||""),7.8)});else tx("   (nenhum)");
-se("SONO");var sl=rs.filter(function(r){return r.tipo==="sono"});if(sl.length)sl.sort(function(a,b){return a.ts-b.ts}).forEach(function(r){tx("   "+hm(r.ts)+"  "+r.texto,7.8)});else tx("   (nenhum)");
-np("OBSERVACAO DO MEDICO E DA CUIDADORA");se("OBSERVACAO DO MEDICO");var vr=vis().filter(function(v){return v.status==="realizado"&&v.nota});
-if(vr.length)vr.forEach(function(v){tx(v.dia+" "+v.hora+"  "+v.quem,8.6,"bold","#134C44");tx("   "+v.nota,8.2);y+=3});else tx("(nenhuma visita atendida)");
-se("OBSERVACAO DA CUIDADORA");if(ps.length)ps.forEach(function(x){tx(x.nome+" Telefone "+(x.fone||"nao informado"),8.6,"bold","#134C44");tx("   "+(x.obs||"nao registrada"),8.2);y+=3});else tx("(nenhum plantao fechado)");
-np("AVISOS, INVENTARIO E PASSAGEM");se("AVISOS");var av3=D.avisos.filter(function(a){return a.paciente===pacAt}).slice(0,12).reverse();
-if(av3.length)av3.forEach(function(a){tx(hm(a.ts)+"  "+a.tipo+" - "+N.estado(a,D.usuarios),8,"normal",a.estado==="falhou"?"#A31C15":"#172320");
-a.tentativas.forEach(function(t){tx("      degrau "+(t.degrau+1)+" "+(t.contato||"sem contato")+" "+(t.resultado||""),7.2)})});else tx("(nenhum)");
-se("INVENTARIO");est().forEach(function(s){tx("   "+s.nome+": "+s.qtd+" "+s.unid+(s.qtd===0?" (RUPTURA)":s.qtd<=s.min?" (abaixo do minimo)":""),7.8,"normal",s.qtd===0?"#A31C15":"#172320")});
-D.movimentos.filter(function(m){return m.paciente===pacAt}).slice(0,10).reverse().forEach(function(m){tx("      "+hm(m.ts)+" "+m.item+" "+m.tipo+" "+m.qtd,7.2)});
-se("PASSAGEM");D.passagens.filter(function(x){return x.paciente===pacAt}).slice(0,3).forEach(function(x){tx(x.de+" as "+hm(x.ts),8,"bold");x.texto.split("\n").slice(0,14).forEach(function(l){tx("   "+l,7.2)})});
-np("ENCERRAMENTO E ASSINATURA DIGITAL");
-if(ps.length)ps.forEach(function(x){doc.setDrawColor(26,115,101);doc.setLineWidth(1);doc.rect(M,y-4,W-M*2,4,"D");y+=10;
-tx(x.nome,11,"bold","#082521");tx("Funcao: "+(x.perfil||"-")+(x.coren?" "+x.coren:""));tx("TELEFONE: "+(x.fone||"nao informado"),9.6,"bold","#134C44");tx("E-mail: "+(x.email||"nao informado"));y+=4;
-tx("Inicio: "+hm(x.inicio)+" de "+new Date(x.inicio).toLocaleDateString("pt-BR"));tx("Previsto: "+hm(x.fimPrev));tx("Real: "+hm(x.fim)+" de "+new Date(x.fim).toLocaleDateString("pt-BR"));tx("Duracao: "+N.dur(x.durMin),9,"bold");
-if(x.antecipado){tx("ENCERRADO ANTES DO HORARIO ("+N.dur(Math.abs(x.minDif))+")",9.2,"bold","#875600");tx("Motivo: "+x.motivoTxt,8.6,"bold");if(x.autorizou)tx("Autorizado por: "+x.autorizou+" ("+x.vinculo+")",8.6,"bold","#134C44");tx("Justificativa: "+x.justificativa)}
-else tx("ENCERRADO DENTRO DO HORARIO PREVISTO",9.2,"bold","#166B3F");
-y+=4;tx("DECLARACAO",9.2,"bold","#134C44");tx("Declaro que os "+x.assinatura.regs+" registros sao verdadeiros, foram feitos por mim, e que cumpri o horario registrado"+(x.antecipado?", com justificativa e autorizacao informadas.":"."));
-tx("Observacao: "+(x.obs||"-"));y+=4;tx("ASSINATURA DIGITAL",9.2,"bold","#134C44");tx("Assinado por: "+x.assinatura.nome);tx("PIN confirmado: SIM");tx("Data: "+new Date(x.assinatura.ts).toLocaleString("pt-BR"));tx("Registros: "+x.assinatura.regs);
-doc.setFont("courier","bold");doc.setFontSize(7.4);doc.setTextColor(19,76,68);doc.splitTextToSize("SHA-256: "+x.assinatura.hash,W-M*2).forEach(function(l){if(y>H-56){doc.addPage();mk();y=M}doc.text(l,M,y);y+=9});
-tx("Qualquer alteracao posterior invalida este hash.",7.2,"normal","#61746F");y+=10});else tx("(nenhum plantao assinado)");
-var id=sha(new TextEncoder().encode(txtRel())).slice(0,16),tot=doc.internal.getNumberOfPages(),i,j;
-for(i=1;i<=tot;i++){doc.setPage(i);var ph=doc.internal.pageSize.getHeight();doc.setFont("helvetica","normal");doc.setFontSize(6.6);doc.setTextColor(97,116,111);
-["Registro de cuidado, nao controle de jornada. Nao substitui o ponto do empregador (Portaria 671/2021).","Nao constitui diagnostico. Quem define limites e a enfermagem responsavel.","MacLink HomeCare ID: "+id+" Pagina "+i+"/"+tot].forEach(function(l,k){doc.text(l,26,ph-30+k*8)})}
-pdf=doc.output("blob");pdfNome="maclink-"+pacAt+"-"+tipoRel+"-"+diaAt()+".pdf";pdfInfo={paginas:tot,pagGraf:pg};
-regEnvio("PDF completo gerado","arquivo local",true);aud("envio","PDF "+tot+" páginas, gráfico pág. "+pg);beep("ok");
-toast("PDF pronto: "+tot+" páginas, gráfico na "+pg+".","i",null,8000);falar("Prontuário completo gerado, com o gráfico e a sua assinatura.",true);rRel();return pdf}
+function gerarPdf(){
+if(!pdfOk()){beep("ag");toast("Feche e assine o plantão para liberar o PDF.","ag");return null}
+var J=window.jspdf&&window.jspdf.jsPDF;
+if(!J){toast("Biblioteca de PDF não carregou. Use Imprimir e escolha Salvar como PDF.","ag",null,9000);return null}
+var doc=new J({unit:"pt",format:"a4",orientation:"portrait"}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=38,TOP=58,BOT=48;
+var p=pac(),pl=plano(),ps=plRel(),rs=regsRel(),usarM=GC("marca"),pgGraf=0;
+var C={p:[8,37,33],p2:[19,76,68],verde:[22,107,63],texto:[23,35,32],muted:[97,116,111],linha:[217,208,188],fundo:[233,245,241],alerta:[163,28,21],ambar:[135,86,0],azul:[23,80,137],branco:[255,255,255]};
+var y=TOP;
+function cor(c){doc.setTextColor(c[0],c[1],c[2])}
+function cabecalho(){
+W=doc.internal.pageSize.getWidth();H=doc.internal.pageSize.getHeight();
+doc.setFillColor(C.p[0],C.p[1],C.p[2]);doc.rect(0,0,W,39,"F");
+doc.setFont("helvetica","bold");doc.setFontSize(11);cor(C.branco);doc.text("MacLink HomeCare",M,24);
+doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.text("PRONTUARIO DE CUIDADO",W-M,24,{align:"right"});
+doc.setDrawColor(C.linha[0],C.linha[1],C.linha[2]);doc.setLineWidth(.5);doc.line(M,45,W-M,45);
+if(usarM){try{doc.saveGraphicsState();doc.setGState(new doc.GState({opacity:.045}));doc.setFont("helvetica","bold");doc.setFontSize(34);cor(C.p2);doc.text("COPIA "+String(nomeAt()).toUpperCase(),W/2,H/2,{align:"center",angle:28});doc.restoreGraphicsState()}catch(e){}}
+y=TOP;
+}
+function novaPagina(orientacao){
+doc.addPage("a4",orientacao||"portrait");
+cabecalho();
+}
+function garantir(h){
+if(y+h>H-BOT){novaPagina("portrait")}
+}
+function texto(t,opt){
+opt=opt||{};var tam=opt.tam||8.5,estilo=opt.estilo||"normal",c=opt.cor||C.text,indent=opt.indent||0,lh=opt.lh||tam*1.38;
+doc.setFont("helvetica",estilo);doc.setFontSize(tam);cor(c);
+var linhas=doc.splitTextToSize(String(t==null?"":t),W-M*2-indent);
+linhas.forEach(function(l){garantir(lh);doc.text(l,M+indent,y);y+=lh});
+}
+function secao(t){
+/* Reserva espaço para o título e o início do conteúdo, evitando cabeçalho órfão no rodapé. */
+garantir(42);y+=6;doc.setFillColor(C.fundo[0],C.fundo[1],C.fundo[2]);doc.roundedRect(M,y-11,W-M*2,19,4,4,"F");
+doc.setFont("helvetica","bold");doc.setFontSize(8.5);cor(C.p2);doc.text(String(t).toUpperCase(),M+8,y+2);y+=17;
+}
+function subtitulo(t){garantir(28);y+=3;doc.setFont("helvetica","bold");doc.setFontSize(8);cor(C.p2);doc.text(String(t),M,y);y+=12}
+function linha(t,op){texto(t,op)}
+function item(t,op){texto("• "+t,Object.assign({indent:8},op||{}))}
+function separador(){garantir(9);doc.setDrawColor(C.linha[0],C.linha[1],C.linha[2]);doc.setLineWidth(.35);doc.line(M,y,W-M,y);y+=8}
+function hora(ts){return hm(ts)}
+function listaRegistros(lista,fmt){
+if(!lista.length){linha("Nenhum registro no período.",{tam:7.8,cor:C.muted});return}
+lista.slice().sort(function(a,b){return a.ts-b.ts}).forEach(function(r){garantir(24);fmt(r)})
+}
+cabecalho();
+doc.setFont("helvetica","bold");doc.setFontSize(17);cor(C.p);doc.text("Relatório assistencial",M,y);y+=19;
+texto("Síntese organizada para acompanhamento e continuidade do cuidado",{tam:8.5,cor:C.muted});y+=5;
+secao("Identificação do paciente");
+linha("Paciente: "+(p.nome||"Não informado"),{tam:10,estilo:"bold"});
+linha("Idade: "+(p.idade||"Não informada")+"    Quarto: "+(p.quarto||"Não informado"));
+linha("Alergias: "+(p.alergia||"Não informadas"));
+linha("Dieta: "+(p.dieta||"Não informada"));
+linha("Condição / observações: "+(p.obs||"Não registrada"));
+secao("Período e profissionais responsáveis");
+var fxPdf=faixaRel();linha("Período: "+(tipoRel==="plantao"?"Plantões fechados disponíveis":new Date(fxPdf.ini+"T12:00:00").toLocaleDateString("pt-BR")+" a "+new Date(fxPdf.fim+"T12:00:00").toLocaleDateString("pt-BR")));
+linha("Tipo de relatório: "+({plantao:"Por plantão",dia:"Diário",semana:"Semanal",mes:"Mensal"}[tipoRel]||"Relatório"));
+if(ps.length)ps.forEach(function(x){
+garantir(65);subtitulo(x.nome||"Profissional");
+linha("Função: "+(x.perfil||"Não informada")+(x.coren?" · "+x.coren:""));
+linha("Telefone: "+(x.fone||((U(x.usuarioId)||{}).fone)||"Não informado")+"    E-mail: "+(x.email||((U(x.usuarioId)||{}).email)||"Não informado"));
+linha("Conferência de acesso: "+(x.semFoto?"Foto não registrada":"Foto registrada"));
+if(x.antecipado){linha("Encerramento antecipado: "+(x.motivoTxt||"Motivo não informado"),{cor:C.ambar});if(x.autorizou)linha("Autorizado por: "+x.autorizou+(x.vinculo?" ("+x.vinculo+")":""));linha("Justificativa: "+(x.justificativa||"Não informada"))}
+linha("Assinatura digital (SHA-256): "+((x.assinatura&&x.assinatura.hash)||"Não disponível"),{tam:7.1,cor:C.p2});
+separador();
+});else linha("Nenhum plantão fechado e assinado no período.",{cor:C.alerta});
+var enf=U(pl.definidoPor);
+if(enf){secao("Responsável técnico");linha((enf.nome||"")+(enf.coren?" · "+enf.coren:""));linha("Telefone: "+(enf.fone||"Não informado"))}
+secao("Emissão e síntese");
+linha("Gerado por: "+nomeAt()+" · "+new Date().toLocaleString("pt-BR"));
+linha("Finalidade: "+(V("motivo")||"Acompanhamento assistencial"));
+var G=dg(),fora=G.regs.filter(function(r){return r.nums&&N.avaliar(r.tipo,r.nums,G.L).fora}).length;
+var pend=(D.tarefas[pacAt]||[]).filter(function(t){return t.origem==="reafericao"&&!feito(t)}).length;
+var crit=est().filter(function(s){return s.qtd<=s.min}).length;
+linha("Registros no período: "+rs.length+" · Tarefas concluídas: "+tars().filter(feito).length+"/"+tars().length);
+linha("Sinais fora dos limites configurados: "+fora+" · Reaferições pendentes: "+pend+" · Itens de estoque críticos: "+crit,{cor:fora?C.alerta:C.text});
+secao("Evolução cronológica dos cuidados");
+listaRegistros(rs,function(r){
+var nome=(PECAS[r.tipo]&&PECAS[r.tipo].nome)||r.tipo||"Registro";
+texto(hora(r.ts)+"  |  "+nome+"  |  "+(r.texto||"")+(r.valor?" — "+r.valor:""),{tam:7.7,lh:10.1});
+texto("Responsável: "+(r.autor||"Não identificado"),{tam:6.8,cor:C.muted,indent:12,lh:8.5});
+if(r.corrigido&&Array.isArray(r.historico))r.historico.forEach(function(h){texto("Correção por "+h.autor+" · Motivo: "+h.motivo+" · Anterior: "+(h.antes&&h.antes.texto||""),{tam:6.7,cor:C.ambar,indent:12,lh:8.5})});
+});
+/* O gráfico permanece em página própria, em paisagem, para preservar legibilidade. */
+novaPagina("landscape");pgGraf=doc.internal.getNumberOfPages();grafPdf(doc);
+novaPagina("portrait");
+secao("Alimentação e hidratação");
+["comida","agua"].forEach(function(k){
+var l=rs.filter(function(r){return r.tipo===k});subtitulo((PECAS[k]&&PECAS[k].nome||k)+" ("+l.length+")");
+listaRegistros(l,function(r){texto(hora(r.ts)+" · "+(r.texto||"")+(r.valor?" — "+r.valor:""),{tam:7.7,indent:8,lh:10})});
+});
+linha("Alimentos permitidos: "+(com().filter(function(c){return c.pode}).map(function(c){return c.nome}).join(", ")||"Não informado"),{tam:7.5,cor:C.verde});
+linha("Restrições alimentares: "+(com().filter(function(c){return !c.pode}).map(function(c){return c.nome}).join(", ")||"Não informado"),{tam:7.5,cor:C.alerta});
+secao("Medicação");
+var meds=tars().filter(function(t){return t.peca==="remedio"});
+if(meds.length)meds.forEach(function(t){item((t.hora||"Horário não informado")+" · "+(feito(t)?"Administrado":"Pendente")+" · "+(t.nome||"Medicação"),{tam:7.6,cor:feito(t)?C.verde:C.ambar})});
+else linha("Nenhuma medicação programada no plano.",{tam:7.7,cor:C.muted});
+listaRegistros(rs.filter(function(r){return r.tipo==="remedio"}),function(r){item("Administrado/registrado "+hora(r.ts)+" · "+(r.texto||"")+(r.valor?" — "+r.valor:""),{tam:7.5})});
+secao("Higiene e conforto");
+["banho","fralda","posicao"].forEach(function(k){
+var l=rs.filter(function(r){return r.tipo===k});subtitulo((PECAS[k]&&PECAS[k].nome||k)+" ("+l.length+")");
+listaRegistros(l,function(r){item(hora(r.ts)+" · "+(r.texto||"")+(r.valor?" — "+r.valor:""),{tam:7.5})});
+});
+secao("Sinais vitais");
+var medidas=rs.filter(function(r){return r.nums});
+listaRegistros(medidas,function(r){
+var av=N.avaliar(r.tipo,r.nums,pl.limites),nome=(PECAS[r.tipo]&&PECAS[r.tipo].nome)||r.tipo;
+texto(hora(r.ts)+" · "+nome+" · "+(r.valor||""),{tam:7.7,estilo:"bold",cor:av.fora?C.alerta:C.text});
+texto("Limites: "+(av.semLimite?"não definidos":"configurados")+" · Avaliação: "+(av.fora?"fora do limite — requer atenção":av.semLimite?"encaminhar à enfermagem para avaliação":"dentro dos limites configurados"),{tam:7.1,cor:av.fora?C.alerta:C.muted,indent:9});
+});
+secao("Dor, humor e sono");
+subtitulo("Dor");
+listaRegistros(rs.filter(function(r){return typeof r.dor==="number"}),function(r){item(hora(r.ts)+" · "+r.dor+"/10 ("+rotDor(r.dor)+") "+(r.valor||""),{tam:7.5,cor:corDor(r.dor)})});
+subtitulo("Humor");
+listaRegistros(rs.filter(function(r){return typeof r.humor==="number"}),function(r){item(hora(r.ts)+" · "+r.humor+"/5 "+(r.valor||""),{tam:7.5})});
+subtitulo("Sono");
+listaRegistros(rs.filter(function(r){return r.tipo==="sono"}),function(r){item(hora(r.ts)+" · "+(r.texto||""),{tam:7.5})});
+secao("Observações profissionais");
+subtitulo("Registros médicos");
+var visitas=vis().filter(function(v){return v.status==="realizado"&&v.nota});
+if(visitas.length)visitas.forEach(function(v){texto((v.dia||"")+" "+(v.hora||"")+" · "+(v.quem||""),{tam:7.7,estilo:"bold"});texto(v.nota,{tam:7.5,indent:8});y+=3});
+else linha("Nenhuma observação médica registrada.",{tam:7.6,cor:C.muted});
+subtitulo("Observações da cuidadora");
+if(ps.length)ps.forEach(function(x){texto((x.nome||"Profissional")+" · Telefone: "+(x.fone||"Não informado"),{tam:7.7,estilo:"bold"});texto(x.obs||"Sem observação registrada.",{tam:7.5,indent:8});y+=3});
+else linha("Nenhuma observação de cuidadora disponível.",{tam:7.6,cor:C.muted});
+secao("Avisos, inventário e passagem de cuidado");
+var avisos=D.avisos.filter(function(a){return a.paciente===pacAt}).slice(0,12).reverse();
+if(avisos.length)avisos.forEach(function(a){texto(hora(a.ts)+" · "+a.tipo+" · "+N.estado(a,D.usuarios),{tam:7.5,cor:a.estado==="falhou"?C.alerta:C.text});(a.tentativas||[]).forEach(function(t){texto("Contato "+(t.contato||"não informado")+" · "+(t.resultado||"sem retorno"),{tam:6.8,indent:10,cor:C.muted})})});
+else linha("Nenhum aviso registrado.",{tam:7.5,cor:C.muted});
+subtitulo("Inventário");
+est().forEach(function(s){item((s.nome||"Item")+": "+s.qtd+" "+(s.unid||"")+(s.qtd===0?" · ruptura":s.qtd<=s.min?" · abaixo do mínimo":""),{tam:7.3,cor:s.qtd<=s.min?C.alerta:C.text})});
+D.movimentos.filter(function(m){return m.paciente===pacAt}).slice(0,10).reverse().forEach(function(m){texto(hora(m.ts)+" · "+m.item+" · "+m.tipo+" · "+m.qtd,{tam:6.8,indent:10,cor:C.muted})});
+subtitulo("Passagem de cuidado");
+var pass=D.passagens.filter(function(x){return x.paciente===pacAt}).slice(0,3);
+if(pass.length)pass.forEach(function(x){texto((x.de||"Responsável não identificado")+" · "+new Date(x.ts).toLocaleString("pt-BR"),{tam:7.4,estilo:"bold"});(x.texto||"").split("\n").slice(0,14).forEach(function(l){texto(l,{tam:7.1,indent:8})})});
+else linha("Nenhuma passagem registrada.",{tam:7.5,cor:C.muted});
+secao("Encerramento e validação");
+if(ps.length)ps.forEach(function(x){
+garantir(90);separador();
+texto(x.nome||"Profissional responsável",{tam:9.5,estilo:"bold",cor:C.p});
+linha("Função: "+(x.perfil||"Não informada")+(x.coren?" · "+x.coren:""));
+linha("Telefone: "+(x.fone||"Não informado")+" · E-mail: "+(x.email||"Não informado"));
+linha(x.antecipado?"Plantão encerrado antecipadamente, conforme justificativa registrada.":"Plantão encerrado e assinado.");
+if(x.antecipado){linha("Motivo: "+(x.motivoTxt||"Não informado"),{cor:C.ambar});if(x.autorizou)linha("Autorização: "+x.autorizou+(x.vinculo?" · "+x.vinculo:""));linha("Justificativa: "+(x.justificativa||"Não informada"))}
+linha("Declaração: os "+((x.assinatura&&x.assinatura.regs)||0)+" registros assistenciais foram confirmados pelo profissional responsável.");
+linha("Assinado por: "+((x.assinatura&&x.assinatura.nome)||x.nome||"Não informado")+" · PIN confirmado");
+linha("Data da assinatura: "+(x.assinatura&&x.assinatura.ts?new Date(x.assinatura.ts).toLocaleString("pt-BR"):"Não informada"));
+linha("Código de integridade SHA-256: "+((x.assinatura&&x.assinatura.hash)||"Não disponível"),{tam:6.9,cor:C.p2});
+linha("Qualquer alteração posterior nos registros invalida a conferência de integridade.",{tam:6.8,cor:C.muted});
+});
+else linha("Nenhum plantão assinado disponível.",{cor:C.alerta});
+y+=5;linha("Este documento registra atividades de cuidado e informações assistenciais. Não constitui diagnóstico médico e não substitui a avaliação da equipe de saúde.",{tam:7.1,cor:C.muted});
+var id=sha(new TextEncoder().encode(txtRel())).slice(0,16),tot=doc.internal.getNumberOfPages();
+for(var i=1;i<=tot;i++){
+doc.setPage(i);var ph=doc.internal.pageSize.getHeight(),pw=doc.internal.pageSize.getWidth();
+doc.setDrawColor(C.linha[0],C.linha[1],C.linha[2]);doc.setLineWidth(.4);doc.line(M,ph-37,pw-M,ph-37);
+doc.setFont("helvetica","normal");doc.setFontSize(6.3);cor(C.muted);
+doc.text("MacLink HomeCare · Registro assistencial · Não substitui avaliação clínica.",M,ph-25);
+doc.text("ID "+id+" · Página "+i+"/"+tot,pw-M,ph-25,{align:"right"});
+}
+pdf=doc.output("blob");pdfNome="maclink-"+pacAt+"-"+tipoRel+"-"+diaAt()+".pdf";pdfInfo={paginas:tot,pagGraf:pgGraf};
+regEnvio("PDF completo gerado","arquivo local",true);aud("envio","PDF "+tot+" páginas, gráfico pág. "+pgGraf);beep("ok");
+toast("PDF pronto: "+tot+" páginas, gráfico na "+pgGraf+".","i",null,8000);falar("Prontuário completo gerado, com o gráfico e a sua assinatura.",true);rRel();return pdf
+}
 function regEnvio(c,p,cf){D.envios.unshift({id:uid("e"),ts:now(),canal:c,para:p,por:nomeAt(),motivo:V("motivo"),conf:!!cf});save();rRel()}
 function baixar(b,n){var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u)},5000)}
 function destSel2(){return D.destinatarios.filter(function(d){return destSel[d.id]&&d.consent})}
 function foneAt(){var q=V("qrFone").replace(/\D/g,"");if(q)return q;var d=destSel2().filter(function(x){return x.fone})[0];return d?d.fone:""}
 function mailAt(){var q=V("qrMail").trim();if(q)return q;var d=destSel2().filter(function(x){return x.email})[0];return d?d.email:""}
 function resWa(){var G=dg(),ps=plRel(),fora=G.regs.filter(function(r){return r.nums&&N.avaliar(r.tipo,r.nums,G.L).fora}).length;
-var l=["*MacLink HomeCare - Prontuário*","Paciente: "+pac().nome,"Dia: "+diaAt(),"","Registros: "+regsRel().length,"Tarefas: "+tars().filter(feito).length+"/"+tars().length,"Fora do limite: "+fora,""];
-ps.forEach(function(x){l.push("Profissional: "+x.nome);l.push("Telefone: "+(x.fone||"não informado"));l.push("Plantão: "+hm(x.inicio)+" as "+hm(x.fim)+(x.antecipado?" (antecipado: "+x.motivoTxt+")":""));l.push("Assinatura: "+x.assinatura.hash.slice(0,16))});
+var l=["*MacLink HomeCare - Prontuário*","Paciente: "+pac().nome,"Período: "+({plantao:"Plantões fechados",dia:"Diário · "+diaAt(),semana:"Semana atual",mes:"Mês atual"}[tipoRel]||diaAt()),"","Registros: "+regsRel().length,"Tarefas: "+tars().filter(feito).length+"/"+tars().length,"Fora do limite: "+fora,""];
+ps.forEach(function(x){l.push("Profissional: "+x.nome);l.push("Telefone: "+(x.fone||"não informado"));l.push("Situação: "+(x.antecipado?"encerramento antecipado":"plantão encerrado e assinado")+(x.antecipado?" · Motivo: "+x.motivoTxt:""));l.push("Assinatura: "+x.assinatura.hash.slice(0,16))});
 l.push("");l.push("O PDF completo segue em anexo, com o gráfico de 10 faixas e a assinatura digital.");l.push("Registro de cuidado. Não é diagnóstico nem controle de jornada.");return l.join("\n")}
 function linkWa(){var f=N.wa(foneAt()),e=document.getElementById("linkWa"),a=document.getElementById("bAbrirLink");if(!e)return;
 if(!f){e.textContent="Digite o WhatsApp ou escolha um destinatário.";if(a)a.classList.add("hide");return}
@@ -1560,7 +1835,8 @@ function pedirCamMon(){if(!(navigator.mediaDevices&&navigator.mediaDevices.getUs
 Cam.perm="solicitando";rPmCam();navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(s){s.getTracks().forEach(function(t){t.stop()});Cam.perm="concedida";Cam.motivo="";aud("camera","Permissão concedida");rPmCam();rPmFoto();beep("ok");toast("Câmera permitida.")}).catch(function(e){var c=N.errCam(e);Cam.perm=c.estado;Cam.motivo=c.motivo;aud("camera","Monitoramento "+c.estado,true);rPmCam();beep("ag");toast(c.motivo,"ag",null,7000)})}
 function ligarCam(alvo){if(!exige("camera",{autorizado:true}))return;if(!D.camera.consent){toast("Marque o consentimento antes de ligar.","ag");ir("camera");return}
 if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){toast("Este navegador não expõe câmera.","ag");return}
-navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:640}},audio:false}).then(function(s){camStream=s;camAlvo=alvo;var v=document.getElementById(alvo);if(!v)return null;v.srcObject=s;return v.play().catch(function(){})})
+if(camStream){camStream.getTracks().forEach(function(t){t.stop()});camStream=null}
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:640}},audio:false}).then(function(s){camStream=s;camAlvo=alvo;var v=document.getElementById(alvo);if(!v){s.getTracks().forEach(function(t){t.stop()});camStream=null;throw new Error("Área de vídeo não encontrada.")}v.srcObject=s;return v.play().catch(function(){})})
 .then(function(){camOn=true;qAnt=null;Cam.perm="concedida";var o1=document.getElementById("camOff"),o2=document.getElementById("camOffM");
 if(o1)o1.classList.toggle("hide",alvo==="video");if(o2)o2.classList.toggle("hide",alvo==="videoM");
 DS("bLigarCam",true);DS("bLigarCamM",true);DS("bDesligarCam",false);DS("bDesligarCamM",false);detectar();rPmCam();toast("Vigilância iniciada. Mantenha esta tela aberta.")})
@@ -1578,6 +1854,7 @@ if(rms>.19&&now()-ultimoSom>12000){ultimoSom=now();reg({tipo:"camera",texto:"Som
 }).catch(function(e){ST("audioEstado","Não foi possível ativar o microfone: "+(e.message||"permissão negada"));toast("Microfone indisponível ou sem permissão.","ag")})}
 function desligarAudio(){if(audioTimer){clearInterval(audioTimer);audioTimer=null}if(audioStream){audioStream.getTracks().forEach(function(t){t.stop()});audioStream=null}if(audioCtx){try{audioCtx.close()}catch(e){}audioCtx=null}audioAnalyser=null;DS("bLigarAudio",false);DS("bDesligarAudio",true);var bar=document.getElementById("audioNivel");if(bar)bar.style.width="0%";ST("audioEstado","Microfone desligado.")}
 function camOff(){camOn=false;desligarAudio();if(camTimer){clearInterval(camTimer);camTimer=null}if(camStream){camStream.getTracks().forEach(function(t){t.stop()});camStream=null}qAnt=null;
+["video","videoM"].forEach(function(i){var v=document.getElementById(i);if(v){try{v.pause()}catch(e){}v.srcObject=null}});
 ["camOff","camOffM"].forEach(function(i){var e=document.getElementById(i);if(e)e.classList.remove("hide")});["mov","movM"].forEach(function(i){SW(i,false)});
 DS("bLigarCam",false);DS("bLigarCamM",false);DS("bDesligarCam",true);DS("bDesligarCamM",true);ST("dif","Diferença entre quadros: .");ST("difM","Diferença entre quadros: .")}
 function detectar(){var c=document.createElement("canvas");c.width=64;c.height=40;var x=c.getContext("2d",{willReadFrequently:true});if(camTimer)clearInterval(camTimer);
@@ -1665,19 +1942,49 @@ var pa=at("data-pac");if(pa){pacAt=ga("data-pac",pa);rasc=null;pdf=null;pdfInfo=
 var vs=at("data-vis");if(vs){visTab=ga("data-vis",vs);$$("[data-vis]").forEach(function(b){b.classList.toggle("on",b===vs)});rPainel();return}
 var a2=at("data-at");if(a2){var k=ga("data-at",a2);if(k==="camera"){abrir("mdCam");camAlvo="videoM"}else ir(k);return}
 var f=at("data-feito");if(f){var tk=null;tars().forEach(function(x){if(x.id===ga("data-feito",f))tk=x});
-if(tk){if(tk.peca==="fralda"){abrirFralda(tk.id);return}D.feitos[kf(tk)]=now();reg({tipo:tk.peca,texto:tk.nome,origem:tk.origem||"plano"});baixa(tk.peca);save();beep("ok");toast(tk.nome+" feito.");if(D.voz.conf)falar(tk.nome+" de "+nomeF()+", feito.",true);rTarefas();rAbas();rPainel();gavX()}return}
+if(tk){if(tk.peca==="fralda"){abrirFralda(tk.id);return}
+if(tk.peca==="remedio"){pergP="remedio";pergTaskId=tk.id;ST("pergTit","Confirmação da medicação: "+tk.nome);SH("pergOps",PERG.remedio[1].map(function(o){return'<button class="b co" data-op="'+E(o[0])+'">'+E(o[1])+'</button>'}).join(""));abrir("mdPerg");return}
+if(CAMPOS[tk.peca]){taskNumId=tk.id;tnum=tk.peca;vals={};cnum=CAMPOS[tnum][0][0];ir("numeros");return}
+pergTaskId=tk.id;
+if(PERG[tk.peca]){pergP=tk.peca;ST("pergTit",PERG[tk.peca][0]+" - "+nomePac()+" · "+tk.nome);SH("pergOps",PERG[tk.peca][1].map(function(o){return'<button class="b co" data-op="'+E(o[0])+'">'+E(o[1])+'</button>'}).join(""));}
+else{pergP="confirmacaoTarefa";ST("pergTit","Confirme a atividade: "+tk.nome);SH("pergOps",'<button class="b pri" data-op="realizado">Sim, realizei esta atividade</button><button class="b co" data-op="nao_realizado">Não foi realizada</button>')}
+abrir("mdPerg");return}return}
 var aj=at("data-ajuda");if(aj){var tk2=null;tars().forEach(function(x){if(x.id===ga("data-ajuda",aj))tk2=x});
-if(tk2){ST("ajTit","Como fazer: "+tk2.nome);var ps=["Confira nome, hora e alergia de "+nomePac()+".","Faça do jeito combinado, com calma.","Toque em Já fiz."];
+if(tk2){ST("ajTit","Como fazer: "+tk2.nome);var ps=["Confira nome, hora e alergia de "+nomePac()+".","Faça do jeito combinado, com calma.","Toque em Confirmar atividade."];
 SH("ajPassos",ps.map(function(p){return"<li>"+E(p)+"</li>"}).join("")+(tk2.obs?"<li><strong>Observação:</strong> "+E(tk2.obs)+"</li>":""));
 ajTxt="Como fazer "+tk2.nome+" em "+nomeF()+". "+ps.join(". ")+(tk2.obs?" Observação: "+tk2.obs:"");abrir("mdAjuda")}return}
-var op=at("data-op");if(op&&pergP){var kk=pergP,vv=ga("data-op",op),tx=kk==="sono"?vv:PECAS[kk].nome;
-reg({tipo:kk,texto:tx,valor:kk==="sono"?"":vv});baixa(kk);beep("ok");toast(tx+" registrado.");if(D.voz.conf)falar(tx+" de "+nomeF()+" registrado.",true);fechar("mdPerg");pergP=null;return}
+var op=at("data-op");if(op&&pergP){
+var kk=pergP,vv=ga("data-op",op),tx=kk==="sono"?vv:PECAS[kk].nome;
+if(kk==="confirmacaoTarefa"){
+var taskConf=null;if(pergTaskId)(D.tarefas[pacAt]||[]).forEach(function(z){if(z.id===pergTaskId)taskConf=z});
+if(!taskConf){toast("Não encontrei a tarefa. Atualize a tela e tente novamente.","ag");return}
+if(vv==="nao_realizado") {var motivoConf=prompt("Informe por que a atividade não foi realizada:","");if(motivoConf===null)return;if(!motivoConf.trim()){toast("Informe o motivo para registrar a pendência.","ag");return}reg({tipo:"anotacao",texto:"Atividade não realizada: "+taskConf.nome,valor:"Motivo: "+motivoConf.trim(),origem:taskConf.origem||"plano"});beep("ag");toast("Não realização registrada. A tarefa permanece pendente.","ag",null,8000)}
+else{reg({tipo:taskConf.peca,texto:taskConf.nome,valor:"Atividade confirmada pela cuidadora",origem:taskConf.origem||"plano"});marcarTarefaFeita(taskConf.id);baixa(taskConf.peca);beep("ok");toast(taskConf.nome+" confirmada e registrada.");if(D.voz.conf)falar(taskConf.nome+" de "+nomeF()+" confirmada.",true)}
+pergTaskId=null;fechar("mdPerg");pergP=null;return
+}
+if(kk==="remedio"){
+var task=null;if(pergTaskId)(D.tarefas[pacAt]||[]).forEach(function(z){if(z.id===pergTaskId)task=z});
+var rot={administrado:"Medicação administrada",recusado:"Medicação recusada pelo paciente",nao_administrado:"Medicação não administrada"};
+var motivo=vv==="recusado"?"Paciente recusou":vv==="nao_administrado"?"Não administrada":"Administrada conforme prescrição";
+if(vv==="nao_administrado"){var motivoLivre=prompt("Informe o motivo da não administração:","");if(motivoLivre===null)return;if(!motivoLivre.trim()){toast("Informe o motivo para registrar a não administração.","ag");return}motivo+=" · Motivo: "+motivoLivre.trim()}
+reg({tipo:"remedio",texto:rot[vv]||"Medicação",valor:(task?task.nome+" · ":"")+motivo,origem:task?(task.origem||"plano"):"registro_manual"});
+if(vv==="administrado"){if(task)marcarTarefaFeita(task.id);baixa("remedio");beep("ok");toast("Administração da medicação confirmada.");}
+else{beep("ag");toast(vv==="recusado"?"Recusa registrada. Avise a enfermagem conforme protocolo.":"Não administração registrada. Informe o motivo à enfermagem.","ag",null,8000);}
+save();rTarefas();rAbas();rPainel();pergTaskId=null;
+}else{
+var tarefaPerg=null;if(pergTaskId)(D.tarefas[pacAt]||[]).forEach(function(z){if(z.id===pergTaskId)tarefaPerg=z});
+reg({tipo:kk,texto:tx,valor:kk==="sono"?"":vv,origem:tarefaPerg?(tarefaPerg.origem||"plano"):"toque"});
+var recusou=(kk==="banho"&&vv==="recusou");
+if(tarefaPerg&&!recusou)marcarTarefaFeita(tarefaPerg.id);
+if(!recusou)baixa(kk);beep(recusou?"ag":"ok");toast(recusou?"Recusa registrada. A atividade permanece pendente e deve ser comunicada à equipe.":tx+" registrado.",recusou?"ag":undefined);if(D.voz.conf)falar(tx+" de "+nomeF()+" registrado.",true);
+}
+pergTaskId=null;fechar("mdPerg");pergP=null;return}
 var pe=at("data-peca");if(pe&&pe.hasAttribute("data-est")){tocaPeca(ga("data-peca",pe));return}
 var pp=at("data-pp");if(pp&&rasc){var k2=ga("data-pp",pp),i2=rasc.pecas.indexOf(k2);if(i2>=0)rasc.pecas.splice(i2,1);else rasc.pecas.push(k2);rPlano();return}
 var pf=at("data-perfil");if(pf&&rasc){var pr=null;PERFIS.forEach(function(z){if(z.id===ga("data-perfil",pf))pr=z});if(pr){rasc.perfil=pr.id;rasc.pecas=pr.pecas.slice();passo=2;rPlano()}return}
 var pa2=at("data-passo");if(pa2){passo=+ga("data-passo",pa2);rPlano();return}
 var cb=at("data-cob");if(cb&&rasc){rasc.cobertura=ga("data-cob",cb);rPlano();return}
-var sn=at("data-num");if(sn){tnum=ga("data-num",sn);vals={};cnum=CAMPOS[tnum][0][0];rNum();return}
+var sn=at("data-num");if(sn){var numEscolhido=ga("data-num",sn);if(taskNumId){var tarefaNum=null;(D.tarefas[pacAt]||[]).forEach(function(t){if(t.id===taskNumId)tarefaNum=t});if(!tarefaNum||tarefaNum.peca!==numEscolhido)taskNumId=null}tnum=numEscolhido;vals={};cnum=CAMPOS[tnum][0][0];rNum();return}
 var cn=at("data-campo");if(cn){cnum=ga("data-campo",cn);rNum();return}
 var rl=at("data-rel");if(rl){tipoRel=ga("data-rel",rl);$$("#sgRel button").forEach(function(b){b.classList.toggle("on",b===rl)});pdf=null;pdfInfo=null;rRel();return}
 var gf=at("data-g");if(gf){vGraf=ga("data-g",gf);$$("#sgGraf button").forEach(function(b){b.classList.toggle("on",b===gf)});rGraf();return}
@@ -1931,7 +2238,7 @@ t("técnico não abre plano",function(){return N.pode("plano",te)===false||"perm
 t("enfermeiro abre plano",function(){return N.pode("plano",e)===true||"negado"});
 t("não verificado cai para cuidadora",function(){return N.papel({perfil:"enfermagem",categoria:"ENF",verificado:false})==="cuidadora"||"não caiu"});
 t("dextro só enfermeiro",function(){return(N.pode("dextro",e)&&!N.pode("dextro",te)&&!N.pode("dextro",cu))||"falhou"});
-t("cuidadora não vê câmera",function(){return N.pode("camera",cu)===false||"permitido"});
+t("cuidadora pode acessar câmera com consentimento",function(){return N.pode("camera",cu,{autorizado:true})===true||"acesso negado"});
 t("controlado exige liberação",function(){var pl={liberados:["fralda"],autorizacoes:{}};return(N.peca("fralda",cu,pl)&&!N.peca("banho",cu,pl))||"falhou"});
 t("banho é controlado",function(){return PECAS.banho.nivel==="controlado"||"errado"});
 t("fralda é controlado",function(){return PECAS.fralda.nivel==="controlado"||"errado"});
@@ -2031,9 +2338,6 @@ try{if(D){rTopo();rFotos();rAbas();ir("entrada")}}catch(x){}})})();
       u.tent=0;u.blq=0;pin="";bolas();save();
       try{localStorage.setItem(CHAVE,u.id)}catch(e){}
       escolh=u.id;
-      var a=D.aceites.some(function(x){return x.usuario===u.id&&x.termo==="uso"&&x.versao===cfg().versaoTermo});
-      var b=D.aceites.some(function(x){return x.usuario===u.id&&x.termo==="priv"&&x.versao===cfg().versaoTermo});
-      if(!a||!b){acPend=u.id;termoAt="uso";esconde();ir("aceite");return}
       mostra("lgFotoCard");ligaCam();
     }).catch(function(){busy=false;erro("Falha ao verificar o PIN.")});
   }
@@ -2052,10 +2356,10 @@ try{if(D){rTopo();rFotos();rAbas();ir("entrada")}}catch(x){}})})();
 
   function ligaCam(){
     var v=G("lgVideo"),o=G("lgCamOverlay");paraCam();
-    if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){o.style.display="grid";o.textContent="Câmera indisponível. Entre sem foto.";return}
+    if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){o.style.display="grid";o.textContent="Câmera indisponível. Libere o acesso à câmera para continuar.";return}
     navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:false}).then(function(s){
       stream=s;v.srcObject=s;o.style.display="none";return v.play().catch(function(){});
-    }).catch(function(){o.style.display="grid";o.textContent="Câmera não liberada. Entre sem foto."});
+    }).catch(function(){o.style.display="grid";o.textContent="Câmera não liberada. Autorize a câmera para continuar."});
   }
 
   function tirar(){
@@ -2067,22 +2371,33 @@ try{if(D){rTopo();rFotos();rAbas();ir("entrada")}}catch(x){}})})();
   }
   function finaliza(dados){
     paraCam();
-    Cam.dados=dados||null;Cam.motivo=dados?"":"câmera não utilizada";
-    esconde();entrar(!!dados);
+    if(!dados){erro("A foto é obrigatória para liberar o acesso.");mostra("lgFotoCard");ligaCam();return}
+    Cam.dados=dados;Cam.motivo="";
+    if(uAtual&&uAtual.cadastroPendenteContrato===true){
+      escolh=uAtual.id;acPend=uAtual.id;termoAt="uso";esconde();ir("aceite");return;
+    }
+    esconde();entrar(true);
   }
+
+  window.lgContinuarAposContrato=function(){
+    var u=U(escolh)||uAtual;
+    if(!u||!Cam.dados){erro("Conclua a foto de conferência para liberar o acesso.");window.lgSair();return}
+    u.cadastroPendenteContrato=false;save();esconde();entrar(true);
+  };
 
   window.lgSair=function(){
     paraCam();document.body.classList.remove("lg-on");
     G("lgScreen").classList.add("on");pin="";
     var id=null;try{id=localStorage.getItem(CHAVE)}catch(e){}
-    uAtual=U(id)||D.usuarios[0];atualiza(uAtual);mostra("lgPinCard");
+    uAtual=U(escolh)||U(id)||D.usuarios[0];atualiza(uAtual);mostra("lgPinCard");
   };
 
   G("lgPinCard").addEventListener("click",function(e){var b=e.target.closest("button[data-k]");if(b)digitar(b.getAttribute("data-k"))});
   G("lgEmergir").onclick=function(){if(!D)return;esconde();semIdEntrar()};
   G("lgVoltarGrade").onclick=function(){mostra("lgPinCard")};
   G("lgTirarFoto").onclick=tirar;
-  G("lgPularFoto").onclick=function(){finaliza(null)};
+  G("lgPularFoto").textContent="Tentar câmera novamente";
+  G("lgPularFoto").onclick=function(){erro("A foto é obrigatória. Autorize a câmera e tente novamente.");ligaCam()};
 })();
 
 /* ===== Evolução: imprimir / salvar PDF (corrige listeners que estavam dentro do <script src>) ===== */
