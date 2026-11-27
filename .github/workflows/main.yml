@@ -1,0 +1,103 @@
+
+name: MACLINK VISION - MoveNet Conversion
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert-movenet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar TensorFlow e conversor
+        run: |
+          python -m pip install --upgrade pip
+          pip install tensorflow==2.15.1 tensorflowjs==4.17.0
+
+      - name: Conferir e extrair modelo original
+        run: |
+          MODEL="public/movenet-tensorflow2-singlepose-lightning-v4.tar.gz"
+
+          test -f "$MODEL"
+          tar -tzf "$MODEL"
+
+          mkdir -p "$RUNNER_TEMP/movenet"
+          tar -xzf "$MODEL" -C "$RUNNER_TEMP/movenet"
+
+          test -f "$RUNNER_TEMP/movenet/saved_model.pb"
+          test -f "$RUNNER_TEMP/movenet/variables/variables.index"
+
+          echo "Modelo original encontrado e extraido."
+
+      - name: Validar assinatura e inferencia
+        run: |
+          cat > validate.py <<'PY'
+          import tensorflow as tf
+
+          path = "/home/runner/work/_temp/movenet"
+
+          model = tf.saved_model.load(path)
+          print("Assinaturas:", list(model.signatures.keys()))
+
+          if "serving_default" not in model.signatures:
+              raise RuntimeError("Assinatura serving_default nao encontrada")
+
+          fn = model.signatures["serving_default"]
+          print("Entradas:", fn.structured_input_signature)
+
+          kwargs = {}
+          for name, spec in fn.structured_input_signature[1].items():
+              shape = [int(x) if x is not None else 1 for x in spec.shape]
+              kwargs[name] = tf.zeros(shape, dtype=spec.dtype)
+
+          result = fn(**kwargs)
+
+          for name, tensor in result.items():
+              print("Saida:", name, tensor.shape, tensor.dtype)
+
+          valid = any(
+              len(t.shape) >= 2 and
+              tuple(t.shape[-2:]) == (17, 3)
+              for t in result.values()
+          )
+
+          if not valid:
+              raise RuntimeError("Saida nao corresponde aos 17 keypoints")
+
+          print("INFERENCIA DE TESTE APROVADA")
+          PY
+
+          python validate.py
+
+      - name: Converter para TensorFlow.js
+        run: |
+          tensorflowjs_converter \
+            --input_format=tf_saved_model \
+            --output_format=tfjs_graph_model \
+            --signature_name=serving_default \
+            --saved_model_tags=serve \
+            "$RUNNER_TEMP/movenet" \
+            build/movenet_tfjs
+
+          test -s build/movenet_tfjs/model.json
+          ls -lh build/movenet_tfjs/
+
+      - name: Guardar modelo convertido
+        uses: actions/upload-artifact@v4
+        with:
+          name: maclink-vision-movenet-tfjs
+          path: build/movenet_tfjs/
+          if-no-files-found: error
+          retention-days: 30
