@@ -326,6 +326,14 @@ async function detectarPontos(source) {
 
   try {
     inputTensor = prepararImagem(source);
+    console.log("MACLINK INPUT:", {
+  shape: inputTensor.shape,
+  rank: inputTensor.rank,
+  dtype: inputTensor.dtype
+});
+
+console.log("MACLINK MODEL INPUTS:", model.inputs);
+console.log("MACLINK MODEL OUTPUTS:", model.outputs);
 
    outputResult = model.execute(inputTensor);
 
