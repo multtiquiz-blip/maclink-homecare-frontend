@@ -11,14 +11,13 @@
   .status.loading { background: #1a3a35; color: #6fb3a6; }
   .status.success { background: #1b4a3a; color: #6fdfa6; }
   .status.error { background: #4a1b1b; color: #f9a0a0; }
-  #result { background: #142a26; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; max-width: 600px; min-height: 100px; width: 100%; }
+  #result { background: #142a26; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-width: 600px; min-height: 100px; width: 100%; }
   #canvasWrap { position: relative; max-width: 600px; width: 100%; }
   #canvas { width: 100%; border-radius: 12px; background: #000; display: block; }
   input[type="file"] { color: #e0f2ee; }
   button { background: #1a7365; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
   button:disabled { opacity: .5; cursor: not-allowed; }
 </style>
-<!-- TensorFlow.js 4.17.0 — versão com correção do bug de squeeze -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
 </head>
 <body>
@@ -39,46 +38,35 @@
   var ctx = canvas.getContext("2d");
 
   var model = null;
-  var MODEL_URL = "/model.json";
 
-  // Índices dos 17 keypoints COCO
+  // Modelo oficial do TF Hub/Kaggle — convertido com Converter v3.6.0 (compatível)
+  // Fallback local: "/model.json" (convertido com v4.17.0 — pode falhar)
+  var MODEL_URL = "https://www.kaggle.com/models/google/movenet/frameworks/tfJs/variations/singlepose-lightning/versions/4/model.json?tfjs-format=file";
+
   var KEYPOINTS = ["nariz","olho_esq","olho_dir","orelha_esq","orelha_dir","ombro_esq","ombro_dir","cotovelo_esq","cotovelo_dir","pulso_esq","pulso_dir","quadril_esq","quadril_dir","joelho_esq","joelho_dir","tornozelo_esq","tornozelo_dir"];
-  // Conexões do esqueleto
   var CONEXOES = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
 
-  function setStatus(msg, tipo) {
-    statusEl.textContent = msg;
-    statusEl.className = "status " + (tipo || "loading");
-  }
+  function setStatus(msg, tipo) { statusEl.textContent = msg; statusEl.className = "status " + (tipo || "loading"); }
+  function setResult(msg) { resultEl.textContent = msg; }
 
-  function setResult(msg) {
-    resultEl.textContent = msg;
-  }
-
-  // ---------- CARREGAMENTO DO MODELO ----------
+  // ---------- CARREGAMENTO ----------
   async function carregarModelo() {
     try {
       setStatus("Carregando TensorFlow.js...", "loading");
       await tf.ready();
       setStatus("TensorFlow.js pronto. Backend: " + tf.getBackend(), "loading");
 
-      setStatus("Carregando modelo MoveNet...", "loading");
+      setStatus("Carregando modelo MoveNet oficial...", "loading");
       model = await tf.loadGraphModel(MODEL_URL);
 
-      if (!model) {
-        throw new Error("loadGraphModel retornou nulo.");
-      }
+      if (!model) throw new Error("loadGraphModel retornou nulo.");
 
       setStatus("Modelo carregado. Backend: " + tf.getBackend() + ". Selecione uma imagem.", "success");
       fileInput.disabled = false;
 
-      // Mostrar formato de entrada/saída de forma segura
-      if (model.inputs && model.inputs.length) {
-        setResult("Entrada esperada: " + JSON.stringify(model.inputs.map(function(i) { return { name: i.name, shape: i.shape, dtype: i.dtype }; })));
-      }
-      if (model.outputs && model.outputs.length) {
-        setResult(resultEl.textContent + "\nSaída esperada: " + JSON.stringify(model.outputs.map(function(o) { return { name: o.name, shape: o.shape, dtype: o.dtype }; })));
-      }
+      var info = "Entrada: " + JSON.stringify(model.inputs ? model.inputs.map(function(i){return {name:i.name, shape:i.shape, dtype:i.dtype};}) : "?") + "\n";
+      info += "Saída: " + JSON.stringify(model.outputs ? model.outputs.map(function(o){return {name:o.name, shape:o.shape, dtype:o.dtype};}) : "?");
+      setResult(info);
 
     } catch (error) {
       console.error("Erro ao carregar modelo:", error);
@@ -87,16 +75,12 @@
     }
   }
 
-  // ---------- PRÉ-PROCESSAMENTO DA IMAGEM ----------
+  // ---------- PRÉ-PROCESSAMENTO ----------
   function prepararImagem(img) {
-    // Desenhar a imagem no canvas para exibição
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
 
-    // Redimensionar para 192x192 mantendo aspect ratio (letterbox) é o ideal,
-    // mas para simplificar e seguir o padrão do MoveNet, vamos redimensionar diretamente.
-    // O MoveNet SinglePose aceita redimensionamento simples.
     var tensor = tf.browser.fromPixels(img); // [H, W, 3] int32 RGB
     var resized = tf.image.resizeBilinear(tensor, [192, 192], true).toInt(); // [192, 192, 3] int32
     var batched = resized.expandDims(0); // [1, 192, 192, 3]
@@ -107,48 +91,46 @@
 
   // ---------- INFERÊNCIA ----------
   async function executarInferencia(img) {
-    if (!model) {
-      setStatus("Modelo não carregado.", "error");
-      return;
-    }
+    if (!model) { setStatus("Modelo não carregado.", "error"); return; }
 
     setStatus("Executando inferência...", "loading");
 
     var inputTensor = null;
     var outputTensor = null;
-    var keypointsTensor = null;
 
     try {
       inputTensor = prepararImagem(img);
 
-      // Executar o modelo. MoveNet SinglePose aceita predict ou executeAsync.
-      // Usamos executeAsync para maior compatibilidade com GraphModel.
+      // executeAsync é necessário para grafos com operações de controle dinâmico
       outputTensor = await model.executeAsync(inputTensor);
-      // outputTensor deve ser [1, 1, 17, 3]
 
-      // Verificar rank
-      if (outputTensor.rank !== 4) {
-        throw new Error("Saída inesperada. Rank: " + outputTensor.rank + ". Shape: " + JSON.stringify(outputTensor.shape));
+      // Se retornar array, pegar o primeiro
+      if (Array.isArray(outputTensor)) {
+        outputTensor = outputTensor[0];
       }
 
-      // Remover os dois primeiros eixos (batch e pessoa) de forma segura
-      // Usando tf.squeeze com eixos específicos para evitar o erro de rank.
-      keypointsTensor = tf.squeeze(outputTensor, [0, 1]); // [17, 3]
+      // Verificar rank
+      if (outputTensor.rank === null || outputTensor.rank === undefined) {
+        throw new Error("Saída com rank nulo. Modelo incompatível.");
+      }
 
-      // Extrair dados para array JS
-      var dados = await keypointsTensor.array(); // [[y, x, score], ...]
+      // Achatar e extrair 51 valores (17 × 3)
+      var flat = outputTensor.flatten().arraySync();
+      if (flat.length < 51) {
+        throw new Error("Saída com menos de 51 valores. Tamanho: " + flat.length);
+      }
 
-      // Desenhar esqueleto
-      desenharEsqueleto(dados, img.width, img.height);
+      var keypoints = [];
+      for (var i = 0; i < 17; i++) {
+        keypoints.push([flat[i*3], flat[i*3+1], flat[i*3+2]]);
+      }
 
-      // Montar texto de resultado
+      desenharEsqueleto(keypoints, img.width, img.height);
+
       var linhas = [];
-      for (var i = 0; i < dados.length; i++) {
-        var kp = dados[i];
-        var y = kp[0];
-        var x = kp[1];
-        var score = kp[2];
-        linhas.push(KEYPOINTS[i].padEnd(14) + " y=" + y.toFixed(3) + " x=" + x.toFixed(3) + " score=" + score.toFixed(3));
+      for (var j = 0; j < keypoints.length; j++) {
+        var kp = keypoints[j];
+        linhas.push(KEYPOINTS[j].padEnd(14) + " y=" + kp[0].toFixed(3) + " x=" + kp[1].toFixed(3) + " score=" + kp[2].toFixed(3));
       }
       setResult("17 keypoints detectados:\n\n" + linhas.join("\n"));
       setStatus("Inferência concluída com sucesso.", "success");
@@ -157,27 +139,18 @@
       console.error("Erro na inferência:", error);
       setStatus("Erro na inferência: " + error.message, "error");
       setResult("Erro completo:\n" + (error.stack || error.message));
-      // Tentar mostrar informações do modelo se existir
-      if (model && model.inputs) {
-        setResult(resultEl.textContent + "\n\nModelo inputs: " + JSON.stringify(model.inputs.map(function(i){return i.shape;})));
-        setResult(resultEl.textContent + "\nModelo outputs: " + JSON.stringify(model.outputs.map(function(o){return o.shape;})));
-      }
     } finally {
-      // Descartar tensores para evitar vazamento de memória
       if (inputTensor) inputTensor.dispose();
       if (outputTensor) outputTensor.dispose();
-      if (keypointsTensor) keypointsTensor.dispose();
     }
   }
 
-  // ---------- DESENHO DO ESQUELETO ----------
+  // ---------- DESENHO ----------
   function desenharEsqueleto(keypoints, w, h) {
-    // keypoints: array de 17 elementos [y, x, score] normalizados
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#00ffcc";
     ctx.fillStyle = "#ff0066";
 
-    // Desenhar conexões
     CONEXOES.forEach(function(par) {
       var a = keypoints[par[0]];
       var b = keypoints[par[1]];
@@ -189,7 +162,6 @@
       }
     });
 
-    // Desenhar pontos
     keypoints.forEach(function(kp) {
       if (kp[2] > 0.3) {
         ctx.beginPath();
@@ -199,26 +171,20 @@
     });
   }
 
-  // ---------- EVENTO DE SELEÇÃO DE IMAGEM ----------
+  // ---------- EVENTO ----------
   fileInput.addEventListener("change", function(e) {
     var file = e.target.files[0];
     if (!file) return;
-
     var img = new Image();
-    img.onload = function() {
-      executarInferencia(img);
-    };
-    img.onerror = function() {
-      setStatus("Erro ao carregar a imagem.", "error");
-    };
+    img.onload = function() { executarInferencia(img); };
+    img.onerror = function() { setStatus("Erro ao carregar a imagem.", "error"); };
     img.src = URL.createObjectURL(file);
   });
 
   // ---------- INICIALIZAÇÃO ----------
-  // Garantir que o TensorFlow.js está definido antes de tentar carregar
   if (typeof tf === "undefined") {
-    setStatus("TensorFlow.js não foi carregado. Verifique a conexão ou o CDN.", "error");
-    setResult("A tag <script> do TensorFlow.js falhou. Verifique se https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js está acessível.");
+    setStatus("TensorFlow.js não foi carregado. Verifique o CDN.", "error");
+    setResult("A tag <script> do TensorFlow.js falhou.");
   } else {
     carregarModelo();
   }
