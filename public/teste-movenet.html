@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MACLINK VISION - Teste MoveNet</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  font-family:Arial,sans-serif;
+  max-width:900px;
+  margin:25px auto;
+  padding:0 15px;
+  background:#101820;
+  color:#edf2f7
+}
+h1{margin-bottom:5px}
+.panel{
+  background:#1c2a36;
+  border:1px solid #344b5c;
+  border-radius:12px;
+  padding:16px;
+  margin:15px 0
+}
+.status{
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  padding:12px;
+  background:#0c1218;
+  border-radius:8px;
+  color:#a9e8c3
+}
+.error{color:#ffaaaa}
+button{
+  padding:12px 18px;
+  border:0;
+  border-radius:8px;
+  background:#58b78a;
+  color:#07130d;
+  font-weight:bold;
+  cursor:pointer
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+input{margin:12px 0;max-width:100%}
+canvas{display:block;width:100%;height:auto;margin-top:12px}
+small{color:#b8c5d1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px;border-bottom:1px solid #40515e;text-align:left}
+</style>
+</head>
+
+<body>
+
+<h1>MACLINK VISION</h1>
+<p>Teste independente do MoveNet SinglePose Lightning.</p>
+
+<div class="panel">
+  <strong>1. Estado do modelo</strong>
+  <div id="status" class="status">Carregando TensorFlow.js...</div>
+  <p><small>O modelo é carregado da pasta /movenet-tfjs/ deste repositório.</small></p>
+</div>
+
+<div class="panel">
+  <strong>2. Selecionar fotografia</strong>
+  <p>Escolha uma imagem com uma pessoa visível.</p>
+  <input id="photo" type="file" accept="image/*">
+  <br>
+  <button id="run" disabled>Executar inferência</button>
+  <canvas id="canvas"></canvas>
+</div>
+
+<div class="panel">
+  <strong>3. Resultado da análise</strong>
+  <div id="result">Aguardando imagem.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+  const MODEL_URL = "/movenet-tfjs/model.json";
+  const SIZE = 192;
+  const THRESHOLD = 0.30;
+
+  const statusEl = document.getElementById("status");
+  const photoEl = document.getElementById("photo");
+  const runBtn = document.getElementById("run");
+  const canvas = document.getElementById("canvas");
+  const resultEl = document.getElementById("result");
+
+  const ctx = canvas.getContext("2d");
+
+  const labels = [
+    "Nariz","Olho esquerdo","Olho direito",
+    "Orelha esquerda","Orelha direita",
+    "Ombro esquerdo","Ombro direito",
+    "Cotovelo esquerdo","Cotovelo direito",
+    "Pulso esquerdo","Pulso direito",
+    "Quadril esquerdo","Quadril direito",
+    "Joelho esquerdo","Joelho direito",
+    "Tornozelo esquerdo","Tornozelo direito"
+  ];
+
+  const edges = [
+    [0,1],[0,2],[1,3],[2,4],
+    [0,5],[0,6],[5,7],[7,9],
+    [6,8],[8,10],[5,6],[5,11],
+    [6,12],[11,12],[11,13],
+    [13,15],[12,14],[14,16]
+  ];
+
+  let model = null;
+  let selectedImage = null;
+  let transform = null;
+
+  async function init() {
+    try {
+      if (!window.tf) {
+        throw new Error("TensorFlow.js não foi carregado. Verifique a internet.");
+      }
+
+      await tf.ready();
+
+      statusEl.textContent =
+        "TensorFlow.js pronto.\nBackend: " +
+        tf.getBackend() +
+        "\nCarregando modelo...";
+
+      model = await tf.loadGraphModel(MODEL_URL);
+
+      statusEl.textContent =
+        "MODELO CARREGADO COM SUCESSO.\nBackend: " +
+        tf.getBackend() +
+        "\nSelecione uma imagem para testar.";
+
+      runBtn.disabled = !selectedImage;
+
+    } catch (error) {
+      statusEl.className = "status error";
+      statusEl.textContent =
+        "FALHA NO CARREGAMENTO:\n" + error.message +
+        "\n\nConfira a pasta /movenet-tfjs/ e os arquivos do modelo.";
+    }
+  }
+
+  photoEl.addEventListener("change", () => {
+    const file = photoEl.files && photoEl.files[0];
+
+    selectedImage = null;
+    runBtn.disabled = true;
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      resultEl.textContent = "Selecione um arquivo de imagem válido.";
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      selectedImage = image;
+
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+
+      URL.revokeObjectURL(url);
+
+      runBtn.disabled = !model;
+      resultEl.textContent = "Imagem carregada. Pronta para análise.";
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      resultEl.textContent = "Não foi possível abrir a imagem.";
+    };
+
+    image.src = url;
+  });
+
+  function prepareImage(image) {
+    const inputCanvas = document.createElement("canvas");
+    inputCanvas.width = SIZE;
+    inputCanvas.height = SIZE;
+
+    const inputCtx = inputCanvas.getContext("2d");
+
+    inputCtx.fillStyle = "black";
+    inputCtx.fillRect(0, 0, SIZE, SIZE);
+
+    const scale = Math.min(
+      SIZE / image.naturalWidth,
+      SIZE / image.naturalHeight
+    );
+
+    const width = image.naturalWidth * scale;
+    const height = image.naturalHeight * scale;
+
+    const offsetX = (SIZE - width) / 2;
+    const offsetY = (SIZE - height) / 2;
+
+    inputCtx.drawImage(
+      image,
+      offsetX,
+      offsetY,
+      width,
+      height
+    );
+
+    return {
+      canvas: inputCanvas,
+      scale,
+      offsetX,
+      offsetY
+    };
+  }
+
+  function findKeypoints(data) {
+    if (!Array.isArray(data)) return null;
+
+    if (
+      data.length === 17 &&
+      data.every(p =>
+        Array.isArray(p) &&
+        p.length >= 3 &&
+        p.slice(0, 3).every(Number.isFinite)
+      )
+    ) {
+      return data;
+    }
+
+    for (const item of data) {
+      const found = findKeypoints(item);
+      if (found) return found;
+    }
+
+    return null;
+  }
+
+  function drawPoints(points, image) {
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+
+    ctx.drawImage(image, 0, 0);
+
+    const coordinates = points.map(p => ({
+      x: (p[1] * SIZE - transform.offsetX) / transform.scale,
+      y: (p[0] * SIZE - transform.offsetY) / transform.scale,
+      score: p[2]
+    }));
+
+    ctx.lineWidth = Math.max(2, canvas.width / 300);
+    ctx.strokeStyle = "#21e68a";
+
+    edges.forEach(([a, b]) => {
+      const p1 = coordinates[a];
+      const p2 = coordinates[b];
+
+      if (
+        p1.score > THRESHOLD &&
+        p2.score > THRESHOLD &&
+        Number.isFinite(p1.x) &&
+        Number.isFinite(p1.y) &&
+        Number.isFinite(p2.x) &&
+        Number.isFinite(p2.y)
+      ) {
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+    });
+
+    ctx.fillStyle = "#ffeb3b";
+
+    coordinates.forEach(p => {
+      if (
+        p.score > THRESHOLD &&
+        p.x >= 0 && p.x <= canvas.width &&
+        p.y >= 0 && p.y <= canvas.height
+      ) {
+        ctx.beginPath();
+        ctx.arc(
+          p.x,
+          p.y,
+          Math.max(3, canvas.width / 140),
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+    });
+  }
+
+  function showTable(points) {
+    resultEl.replaceChildren();
+
+    const heading = document.createElement("p");
+    heading.textContent = "17 pontos corporais identificados:";
+    resultEl.appendChild(heading);
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const header = document.createElement("tr");
+
+    ["Ponto", "Y", "X", "Confiança"].forEach(label => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      header.appendChild(th);
+    });
+
+    thead.appendChild(header);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    points.forEach((p, i) => {
+      const tr = document.createElement("tr");
+
+      [
+        labels[i],
+        p[0].toFixed(4),
+        p[1].toFixed(4),
+        p[2].toFixed(4)
+      ].forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    resultEl.appendChild(table);
+  }
+
+  runBtn.addEventListener("click", async () => {
+    if (!model || !selectedImage) return;
+
+    runBtn.disabled = true;
+    resultEl.textContent = "Executando inferência...";
+
+    let input = null;
+    let outputs = null;
+
+    try {
+      const prepared = prepareImage(selectedImage);
+      transform = prepared;
+
+      const start = performance.now();
+
+      input = tf.tidy(() =>
+        tf.browser.fromPixels(prepared.canvas)
+          .toInt()
+          .expandDims(0)
+      );
+
+      outputs = await model.executeAsync(input);
+
+      const output = Array.isArray(outputs)
+        ? outputs[0]
+        : outputs;
+
+      if (!output || typeof output.array !== "function") {
+        throw new Error("O modelo não retornou um tensor válido.");
+      }
+
+      const data = await output.array();
+      const points = findKeypoints(data);
+
+      if (!points) {
+        throw new Error(
+          "A saída não contém os 17 pontos no formato esperado. Shape: " +
+          JSON.stringify(output.shape)
+        );
+      }
+
+      const elapsed = (performance.now() - start).toFixed(1);
+
+      drawPoints(points, selectedImage);
+      showTable(points);
+
+      const timing = document.createElement("p");
+      timing.textContent =
+        "Tempo da inferência e leitura: " + elapsed + " ms.";
+
+      resultEl.prepend(timing);
+
+      statusEl.textContent =
+        "INFERÊNCIA CONCLUÍDA.\nBackend: " +
+        tf.getBackend() +
+        "\nFormato de saída: " +
+        JSON.stringify(output.shape);
+
+    } catch (error) {
+      resultEl.textContent = "ERRO NA INFERÊNCIA:\n" + error.message;
+      statusEl.className = "status error";
+      statusEl.textContent = "A execução falhou. Consulte o resultado.";
+    } finally {
+      if (input) input.dispose();
+
+      if (outputs) {
+        if (Array.isArray(outputs)) {
+          outputs.forEach(t => t.dispose());
+        } else {
+          outputs.dispose();
+        }
+      }
+
+      runBtn.disabled = !model || !selectedImage;
+    }
+  });
+
+  init();
+})();
+</script>
+
+</body>
+</html>
