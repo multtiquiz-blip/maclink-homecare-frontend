@@ -1,0 +1,13 @@
+
+{
+  "name": "MacLink HomeCare",
+  "short_name": "HomeCare",
+  "description": "Sistema de apoio e organização do cuidado domiciliar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f7fa",
+  "theme_color": "#176b60",
+  "lang": "pt-BR"
+}
