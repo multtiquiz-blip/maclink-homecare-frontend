@@ -327,7 +327,7 @@ async function detectarPontos(source) {
   try {
     inputTensor = prepararImagem(source);
 
-    outputResult = await model.executeAsync(inputTensor);
+   outputResult = model.execute(inputTensor);
 
     var saida = Array.isArray(outputResult)
       ? outputResult[0]
