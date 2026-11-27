@@ -118,6 +118,13 @@ Carregando TensorFlow.js...
     Somente leitura e testes de execução. Não altera o modelo nem a análise.
     Para o teste com quadro real, carregue um vídeo antes.
   </p>
+  <p class="small">
+    Método de execução usado na análise de vídeo e de imagem:
+    <select id="metodo">
+      <option value="execute">model.execute (síncrono — padrão atual)</option>
+      <option value="executeAsync">model.executeAsync (usado na versão que funcionou)</option>
+    </select>
+  </p>
   <button id="diagBtn" class="diag" disabled>DIAGNOSTICAR GRAFO</button>
 </section>
 
@@ -147,6 +154,7 @@ var videoInfo = document.getElementById("videoInfo");
 var startButton = document.getElementById("startVideo");
 var stopButton = document.getElementById("stopVideo");
 var diagButton = document.getElementById("diagBtn");
+var metodoSelect = document.getElementById("metodo");
 var progress = document.getElementById("progress");
 
 var video = document.getElementById("video");
@@ -301,9 +309,13 @@ async function detectarPontos(source) {
     });
 
     try {
-      outputResult = model.execute(inputTensor);
+      if (metodoSelect.value === "executeAsync") {
+        outputResult = await model.executeAsync(inputTensor);
+      } else {
+        outputResult = model.execute(inputTensor);
+      }
     } catch (erro) {
-      console.error("MACLINK — FALHA DENTRO DO MODELO", erro, {
+      console.error("MACLINK — FALHA DENTRO DO MODELO (" + metodoSelect.value + ")", erro, {
         entrada: inputTensor.shape,
         memoria: tf.memory(),
         backend: tf.getBackend()
@@ -840,11 +852,13 @@ function bytesDoPeso(w) {
   return n * b;
 }
 
-// Executa o modelo pedindo um nó intermediário como saída.
-function tentarNo(nome, entrada) {
+// Executa o modelo pedindo um nó intermediário, com o método indicado.
+async function tentarNo(nome, entrada, metodo) {
   var saida = null;
   try {
-    saida = model.execute(entrada, nome);
+    saida = metodo === "executeAsync"
+      ? await model.executeAsync(entrada, nome)
+      : model.execute(entrada, nome);
     var arr = Array.isArray(saida) ? saida : [saida];
     return { ok: true, shape: arr[0].shape.join("x"), rank: arr[0].rank };
   } catch (e) {
@@ -858,8 +872,10 @@ function tentarNo(nome, entrada) {
   }
 }
 
-function executarCompleto(entrada) {
-  var saida = model.execute(entrada);
+async function executarCompleto(entrada, metodo) {
+  var saida = metodo === "executeAsync"
+    ? await model.executeAsync(entrada)
+    : model.execute(entrada);
   var arr = Array.isArray(saida) ? saida : [saida];
   var shape = arr[0].shape.join("x");
   arr.forEach(function(t) { if (t && t.dispose) t.dispose(); });
@@ -984,27 +1000,24 @@ async function diagnosticarGrafo() {
 
     // ---- 6. Execução: nó a nó
     async function bisectar(rotulo, entrada) {
-      L("\n— " + rotulo + ": ExpandDims executados individualmente —");
+      L("\n— " + rotulo + ": ExpandDims individuais (execute | executeAsync) —");
       var primeira = null;
       for (var k = 0; k < expand.length; k++) {
         var n = expand[k];
-        var res = tentarNo(n.name, entrada);
-        if (res.ok) {
-          L("  OK    " + n.name + " → [" + res.shape + "] rank " + res.rank);
-        } else {
-          L("  FALHA " + n.name + ": " + res.msg);
-          if (!primeira) primeira = n;
-        }
-        if (k % 5 === 4) await new Promise(function(r) { setTimeout(r, 0); });
+        var r1 = await tentarNo(n.name, entrada, "execute");
+        var r2 = await tentarNo(n.name, entrada, "executeAsync");
+        function fmt(r) { return r.ok ? "OK [" + r.shape + "]" : "FALHA (" + r.msg + ")"; }
+        L("  " + n.name + "\n     execute: " + fmt(r1) + "\n     executeAsync: " + fmt(r2));
+        if (!r1.ok && !primeira) primeira = n;
       }
       if (primeira) {
         var dados = nomeLimpo(primeira.input[0]);
-        var ri = tentarNo(dados, entrada);
-        L("  → primeiro nó com falha: " + primeira.name);
-        L("  → entrada de dados desse nó (" + dados + "): " +
+        var ri = await tentarNo(dados, entrada, "execute");
+        L("  → primeiro ExpandDims que falha em execute: " + primeira.name);
+        L("  → seu nó de dados (" + dados + "): " +
           (ri.ok ? "shape [" + ri.shape + "] rank " + ri.rank : "também falha: " + ri.msg));
       } else {
-        L("  nenhum ExpandDims falhou isoladamente");
+        L("  nenhum ExpandDims falhou isoladamente com execute");
       }
       return primeira;
     }
@@ -1012,15 +1025,19 @@ async function diagnosticarGrafo() {
     async function testarEntrada(rotulo, entrada) {
       await bisectar(rotulo, entrada);
 
-      L("\n— " + rotulo + ": modelo completo, 6 execuções seguidas —");
-      for (var k = 1; k <= 6; k++) {
-        try {
-          var shape = executarCompleto(entrada);
-          L("  execução " + k + ": OK [" + shape + "] | tensores vivos: " +
-            tf.memory().numTensors);
-        } catch (e) {
-          L("  execução " + k + ": FALHA → " + e.message);
-          break;
+      ["execute", "executeAsync"].forEach(function() {});
+      for (var m = 0; m < 2; m++) {
+        var metodo = m === 0 ? "execute" : "executeAsync";
+        L("\n— " + rotulo + ": modelo completo com " + metodo + ", 6 execuções —");
+        for (var k = 1; k <= 6; k++) {
+          try {
+            var shape = await executarCompleto(entrada, metodo);
+            L("  execução " + k + ": OK [" + shape + "] | tensores vivos: " +
+              tf.memory().numTensors);
+          } catch (e) {
+            L("  execução " + k + ": FALHA → " + e.message);
+            break;
+          }
         }
       }
     }
@@ -1047,6 +1064,8 @@ async function diagnosticarGrafo() {
     }
 
     L("\nINTERPRETAÇÃO:\n" +
+      "• execute falha e executeAsync passa → usar executeAsync é justificado (como na versão que funcionou).\n" +
+      "• Ambos falham com zeros → o modelo local (grafo/pesos) é o problema; verifique 'convertedBy' acima.\n" +
       "• Falha só em execução k>1 → problema de estado/descarte entre inferências.\n" +
       "• Falha só com quadro real → problema dependente da entrada.\n" +
       "• Falha também com zeros na execução 1 → problema do grafo/pesos/versão.\n" +
