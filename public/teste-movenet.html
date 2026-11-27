@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -18,11 +17,8 @@ body {
   align-items: center;
   gap: 16px;
 }
-
 h1 { color: #6fb3a6; margin: 0; font-size: 22px; }
-
 h2 { font-size: 17px; margin-top: 0; }
-
 .status {
   padding: 10px 16px;
   border-radius: 8px;
@@ -32,11 +28,9 @@ h2 { font-size: 17px; margin-top: 0; }
   max-width: 650px;
   box-sizing: border-box;
 }
-
 .status.loading { background: #1a3a35; color: #6fb3a6; }
 .status.success { background: #1b4a3a; color: #6fdfa6; }
 .status.error { background: #4a1b1b; color: #f9a0a0; }
-
 .panel {
   background: #142a26;
   padding: 16px;
@@ -45,12 +39,7 @@ h2 { font-size: 17px; margin-top: 0; }
   max-width: 650px;
   box-sizing: border-box;
 }
-
-input[type="file"] {
-  color: #e0f2ee;
-  max-width: 100%;
-}
-
+input[type="file"] { color: #e0f2ee; max-width: 100%; }
 button {
   background: #1a7365;
   color: white;
@@ -62,27 +51,11 @@ button {
   cursor: pointer;
   margin: 5px 3px 5px 0;
 }
-
-button:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
-
+button:disabled { opacity: .4; cursor: not-allowed; }
 button.stop { background: #8b3838; }
-
-#canvasWrap {
-  position: relative;
-  width: 100%;
-  max-width: 650px;
-}
-
-#canvas {
-  width: 100%;
-  border-radius: 12px;
-  background: #000;
-  display: block;
-}
-
+button.diag { background: #4a5a8b; }
+#canvasWrap { position: relative; width: 100%; max-width: 650px; }
+#canvas { width: 100%; border-radius: 12px; background: #000; display: block; }
 #result {
   background: #142a26;
   padding: 16px;
@@ -96,26 +69,10 @@ button.stop { background: #8b3838; }
   box-sizing: border-box;
   min-height: 100px;
 }
-
-progress {
-  width: 100%;
-  height: 18px;
-  accent-color: #35c99b;
-}
-
-.small {
-  color: #9bbdb4;
-  font-size: 13px;
-}
-
-#videoInfo {
-  color: #a9d4c9;
-  font-size: 13px;
-}
-
-#video {
-  display: none;
-}
+progress { width: 100%; height: 18px; accent-color: #35c99b; }
+.small { color: #9bbdb4; font-size: 13px; }
+#videoInfo { color: #a9d4c9; font-size: 13px; }
+#video { display: none; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
@@ -155,6 +112,15 @@ Carregando TensorFlow.js...
   </div>
 </section>
 
+<section class="panel">
+  <h2>3. Diagnóstico técnico do grafo</h2>
+  <p class="small">
+    Somente leitura e testes de execução. Não altera o modelo nem a análise.
+    Para o teste com quadro real, carregue um vídeo antes.
+  </p>
+  <button id="diagBtn" class="diag" disabled>DIAGNOSTICAR GRAFO</button>
+</section>
+
 <div id="canvasWrap">
   <canvas id="canvas"></canvas>
 </div>
@@ -180,6 +146,7 @@ var videoInput = document.getElementById("videoInput");
 var videoInfo = document.getElementById("videoInfo");
 var startButton = document.getElementById("startVideo");
 var stopButton = document.getElementById("stopVideo");
+var diagButton = document.getElementById("diagBtn");
 var progress = document.getElementById("progress");
 
 var video = document.getElementById("video");
@@ -257,6 +224,7 @@ async function carregarModelo() {
 
     fileInput.disabled = false;
     videoInput.disabled = false;
+    diagButton.disabled = false;
 
     setStatus(
       "Modelo carregado com sucesso. Backend: " + tf.getBackend(),
@@ -283,6 +251,8 @@ async function carregarModelo() {
 
 // --------------------------------------------------
 // PREPARAÇÃO DA IMAGEM OU QUADRO DE VÍDEO
+// (mesmo pipeline numérico de antes; apenas envolvido em tf.tidy
+//  para não vazar tensores intermediários se algo lançar exceção)
 // --------------------------------------------------
 
 function prepararImagem(source) {
@@ -298,20 +268,17 @@ function prepararImagem(source) {
 
   ctx.drawImage(source, 0, 0, largura, altura);
 
-  var tensor = tf.browser.fromPixels(source);
+  return tf.tidy(function() {
+    var tensor = tf.browser.fromPixels(source);
 
-  var resized = tf.image.resizeBilinear(
-    tensor,
-    [192, 192],
-    true
-  ).toInt();
+    var resized = tf.image.resizeBilinear(
+      tensor,
+      [192, 192],
+      true
+    ).toInt();
 
-  var batched = resized.expandDims(0);
-
-  tensor.dispose();
-  resized.dispose();
-
-  return batched;
+    return resized.expandDims(0);
+  });
 }
 
 // --------------------------------------------------
@@ -326,27 +293,24 @@ async function detectarPontos(source) {
 
   try {
     inputTensor = prepararImagem(source);
+
     console.log("MACLINK INPUT:", {
-  shape: inputTensor.shape,
-  rank: inputTensor.rank,
-  dtype: inputTensor.dtype
-});
+      shape: inputTensor.shape,
+      rank: inputTensor.rank,
+      dtype: inputTensor.dtype
+    });
 
-console.log("MACLINK MODEL INPUTS:", model.inputs);
-console.log("MACLINK MODEL OUTPUTS:", model.outputs);
+    try {
+      outputResult = model.execute(inputTensor);
+    } catch (erro) {
+      console.error("MACLINK — FALHA DENTRO DO MODELO", erro, {
+        entrada: inputTensor.shape,
+        memoria: tf.memory(),
+        backend: tf.getBackend()
+      });
+      throw erro;
+    }
 
-console.log("MACLINK — INÍCIO DA EXECUÇÃO");
-console.log("ENTRADA:", inputTensor.shape);
-console.log("MODELO:", model.inputs);
-console.log("SAÍDAS:", model.outputs);
-
-try {
-  outputResult = model.execute(inputTensor);
-  console.log("MACLINK — EXECUÇÃO CONCLUÍDA", outputResult);
-} catch (erro) {
-  console.error("MACLINK — FALHA DENTRO DO MODELO", erro);
-  throw erro;
-}
     var saida = Array.isArray(outputResult)
       ? outputResult[0]
       : outputResult;
@@ -577,7 +541,30 @@ videoInput.addEventListener("change", function(e) {
 // POSICIONAR O VÍDEO EM UM INSTANTE
 // --------------------------------------------------
 
-function aguardarSeek(tempo) {
+// Garante que há dados de pelo menos o quadro atual (readyState >= 2).
+// O código anterior retornava imediatamente em t=0 sem checar isso.
+function aguardarDadosDoQuadro() {
+  return new Promise(function(resolve, reject) {
+    if (video.readyState >= 2) {
+      resolve();
+      return;
+    }
+
+    var timer = setTimeout(function() {
+      video.removeEventListener("loadeddata", ok);
+      reject(new Error("Tempo esgotado aguardando dados do quadro."));
+    }, 10000);
+
+    function ok() {
+      clearTimeout(timer);
+      resolve();
+    }
+
+    video.addEventListener("loadeddata", ok, {once:true});
+  });
+}
+
+function aguardarSeekBruto(tempo) {
   return new Promise(function(resolve, reject) {
     if (Math.abs(video.currentTime - tempo) < 0.001) {
       resolve();
@@ -606,6 +593,10 @@ function aguardarSeek(tempo) {
   });
 }
 
+function aguardarSeek(tempo) {
+  return aguardarSeekBruto(tempo).then(aguardarDadosDoQuadro);
+}
+
 // --------------------------------------------------
 // ANÁLISE TEMPORAL DO VÍDEO
 // --------------------------------------------------
@@ -621,21 +612,24 @@ async function analisarVideo() {
   stopButton.disabled = false;
   fileInput.disabled = true;
   videoInput.disabled = true;
+  diagButton.disabled = true;
 
   progress.value = 0;
 
   var duracao = video.duration;
   var totalQuadros = Math.ceil(duracao / INTERVALO);
+  var i = 0;
+  var tempo = 0;
 
   video.pause();
 
   try {
     setStatus("Iniciando análise temporal...", "loading");
 
-    for (var i = 0; i < totalQuadros; i++) {
+    for (i = 0; i < totalQuadros; i++) {
       if (interromper) break;
 
-      var tempo = Math.min(i * INTERVALO, duracao);
+      tempo = Math.min(i * INTERVALO, duracao);
 
       await aguardarSeek(tempo);
 
@@ -672,12 +666,10 @@ async function analisarVideo() {
         "loading"
       );
 
-      // Atualiza o painel periodicamente
       if (i % 4 === 0 || i === totalQuadros - 1) {
         mostrarResumoParcial();
       }
 
-      // Libera o navegador entre as inferências
       await new Promise(function(resolve) {
         setTimeout(resolve, 0);
       });
@@ -693,8 +685,14 @@ async function analisarVideo() {
 
   } catch (error) {
     console.error(error);
-    setStatus("Erro na análise: " + error.message, "error");
-    setResult(error.stack || error.message);
+    var contexto =
+      "[Falha no quadro índice " + i + " de " + totalQuadros +
+      " | t=" + tempo.toFixed(2) + " s | quadros já concluídos: " +
+      resultadosVideo.length + " | tensores vivos: " +
+      tf.memory().numTensors + " | readyState: " + video.readyState + "]";
+
+    setStatus("Erro na análise (quadro " + i + "): " + error.message, "error");
+    setResult(contexto + "\n\n" + (error.stack || error.message));
 
   } finally {
     analisando = false;
@@ -703,6 +701,7 @@ async function analisarVideo() {
     stopButton.disabled = true;
     fileInput.disabled = !model;
     videoInput.disabled = !model;
+    diagButton.disabled = !model;
   }
 }
 
@@ -821,11 +820,257 @@ function mostrarRelatorioFinal() {
   setResult(texto);
 }
 
+// ==================================================
+// DIAGNÓSTICO DO GRAFO (somente leitura / testes)
+// ==================================================
+
+function nomeLimpo(n) {
+  return String(n).replace(/^\^/, "").split(":")[0];
+}
+
+function bytesDoPeso(w) {
+  var n = 1;
+  (w.shape || []).forEach(function(d) { n *= d; });
+  var q = w.quantization && w.quantization.dtype;
+  var b;
+  if (q === "uint8") b = 1;
+  else if (q === "uint16" || q === "float16") b = 2;
+  else if (w.dtype === "bool") b = 1;
+  else b = 4;
+  return n * b;
+}
+
+// Executa o modelo pedindo um nó intermediário como saída.
+function tentarNo(nome, entrada) {
+  var saida = null;
+  try {
+    saida = model.execute(entrada, nome);
+    var arr = Array.isArray(saida) ? saida : [saida];
+    return { ok: true, shape: arr[0].shape.join("x"), rank: arr[0].rank };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  } finally {
+    if (saida) {
+      (Array.isArray(saida) ? saida : [saida]).forEach(function(t) {
+        if (t && t.dispose) t.dispose();
+      });
+    }
+  }
+}
+
+function executarCompleto(entrada) {
+  var saida = model.execute(entrada);
+  var arr = Array.isArray(saida) ? saida : [saida];
+  var shape = arr[0].shape.join("x");
+  arr.forEach(function(t) { if (t && t.dispose) t.dispose(); });
+  return shape;
+}
+
+async function diagnosticarGrafo() {
+  if (!model || analisando) return;
+
+  diagButton.disabled = true;
+  startButton.disabled = true;
+
+  var linhas = [];
+  function L(t) {
+    linhas.push(t);
+    setResult("DIAGNÓSTICO DO GRAFO\n\n" + linhas.join("\n"));
+  }
+
+  try {
+    setStatus("Diagnóstico em andamento...", "loading");
+
+    // ---- 1. Ambiente
+    L("tfjs: " + tf.version.tfjs +
+      " | converter: " + (tf.version["tfjs-converter"] || "?") +
+      " | backend: " + tf.getBackend());
+
+    // ---- 2. model.json bruto
+    var resp = await fetch(MODEL_URL, { cache: "no-store" });
+    if (!resp.ok) throw new Error("model.json: HTTP " + resp.status);
+    var json = await resp.json();
+
+    var nos = (json.modelTopology && json.modelTopology.node) || [];
+    var porNome = {};
+    nos.forEach(function(n) { porNome[n.name] = n; });
+
+    L("format: " + json.format +
+      " | generatedBy: " + json.generatedBy +
+      " | convertedBy: " + json.convertedBy);
+    L("nós no grafo: " + nos.length);
+
+    // ---- 3. Integridade dos shards
+    var manifesto = json.weightsManifest || [];
+    var esperado = 0;
+    var paths = [];
+    manifesto.forEach(function(g) {
+      (g.weights || []).forEach(function(w) { esperado += bytesDoPeso(w); });
+      (g.paths || []).forEach(function(p) { paths.push(p); });
+    });
+    var recebido = 0;
+    for (var p = 0; p < paths.length; p++) {
+      var r = await fetch("/" + paths[p], { cache: "no-store" });
+      if (!r.ok) {
+        L("SHARD " + paths[p] + ": HTTP " + r.status);
+        continue;
+      }
+      var buf = await r.arrayBuffer();
+      recebido += buf.byteLength;
+      L("shard " + paths[p] + ": " + buf.byteLength + " bytes");
+    }
+    L("bytes esperados pelo manifesto: " + esperado +
+      " | recebidos: " + recebido +
+      (esperado === recebido ? "  → CONSISTENTE" : "  → DIVERGENTE"));
+
+    // ---- 4. Operações dinâmicas / controle de fluxo
+    var DINAMICAS = [
+      "Where","NonZero","Unique","Switch","Merge","Enter","Exit",
+      "NextIteration","LoopCond","If","StatelessIf","While",
+      "StatelessWhile","NonMaxSuppressionV2","NonMaxSuppressionV3",
+      "NonMaxSuppressionV4","NonMaxSuppressionV5","TensorArrayV3",
+      "TensorListReserve","TensorListGetItem","TensorListSetItem"
+    ];
+    var contagem = {};
+    nos.forEach(function(n) { contagem[n.op] = (contagem[n.op] || 0) + 1; });
+    var achadas = DINAMICAS.filter(function(o) { return contagem[o]; });
+    L("operações dinâmicas/controle de fluxo no JSON: " +
+      (achadas.length ? achadas.join(", ") : "nenhuma"));
+    try {
+      var ex = model.executor;
+      L("executor.isControlFlowModel: " + ex.isControlFlowModel +
+        " | isDynamicShapeModel: " + ex.isDynamicShapeModel);
+    } catch (e) {
+      L("flags do executor indisponíveis: " + e.message);
+    }
+
+    var topOps = Object.keys(contagem)
+      .sort(function(a, b) { return contagem[b] - contagem[a]; })
+      .slice(0, 15)
+      .map(function(o) { return o + "×" + contagem[o]; })
+      .join(", ");
+    L("operações mais frequentes: " + topOps);
+
+    // ---- 5. Nós ExpandDims
+    function lerConstante(nome) {
+      try {
+        var wm = model.executor && model.executor.weightMap;
+        if (wm && wm[nome] && wm[nome][0]) {
+          return Array.from(wm[nome][0].dataSync());
+        }
+      } catch (e) {}
+      var n = porNome[nome];
+      var t = n && n.attr && n.attr.value && n.attr.value.tensor;
+      if (t) {
+        var v = t.intVal || t.int64Val;
+        if (v) return v.map(Number);
+      }
+      return null;
+    }
+
+    var expand = nos.filter(function(n) { return n.op === "ExpandDims"; });
+    L("\nExpandDims no grafo: " + expand.length);
+
+    expand.forEach(function(n) {
+      var dados = nomeLimpo(n.input[0]);
+      var axisNome = nomeLimpo(n.input[1]);
+      var axisNo = porNome[axisNome];
+      var axisVal = lerConstante(axisNome);
+      L("  " + n.name +
+        "\n     dados ← " + dados + " (" + (porNome[dados] ? porNome[dados].op : "?") + ")" +
+        "\n     axis  ← " + axisNome + " (" + (axisNo ? axisNo.op : "?") + ")" +
+        " = " + (axisVal === null ? "não resolvido estaticamente" : JSON.stringify(axisVal)));
+    });
+
+    // ---- 6. Execução: nó a nó
+    async function bisectar(rotulo, entrada) {
+      L("\n— " + rotulo + ": ExpandDims executados individualmente —");
+      var primeira = null;
+      for (var k = 0; k < expand.length; k++) {
+        var n = expand[k];
+        var res = tentarNo(n.name, entrada);
+        if (res.ok) {
+          L("  OK    " + n.name + " → [" + res.shape + "] rank " + res.rank);
+        } else {
+          L("  FALHA " + n.name + ": " + res.msg);
+          if (!primeira) primeira = n;
+        }
+        if (k % 5 === 4) await new Promise(function(r) { setTimeout(r, 0); });
+      }
+      if (primeira) {
+        var dados = nomeLimpo(primeira.input[0]);
+        var ri = tentarNo(dados, entrada);
+        L("  → primeiro nó com falha: " + primeira.name);
+        L("  → entrada de dados desse nó (" + dados + "): " +
+          (ri.ok ? "shape [" + ri.shape + "] rank " + ri.rank : "também falha: " + ri.msg));
+      } else {
+        L("  nenhum ExpandDims falhou isoladamente");
+      }
+      return primeira;
+    }
+
+    async function testarEntrada(rotulo, entrada) {
+      await bisectar(rotulo, entrada);
+
+      L("\n— " + rotulo + ": modelo completo, 6 execuções seguidas —");
+      for (var k = 1; k <= 6; k++) {
+        try {
+          var shape = executarCompleto(entrada);
+          L("  execução " + k + ": OK [" + shape + "] | tensores vivos: " +
+            tf.memory().numTensors);
+        } catch (e) {
+          L("  execução " + k + ": FALHA → " + e.message);
+          break;
+        }
+      }
+    }
+
+    var zeros = tf.zeros([1, 192, 192, 3], "int32");
+    try {
+      await testarEntrada("ENTRADA SINTÉTICA (zeros int32 [1,192,192,3])", zeros);
+    } finally {
+      zeros.dispose();
+    }
+
+    // ---- 7. Quadro real do vídeo
+    if (video.src && video.readyState >= 2) {
+      var entradaV = prepararImagem(video);
+      try {
+        L("\nQuadro real do vídeo em t=" + video.currentTime.toFixed(2) +
+          " s | entrada [" + entradaV.shape.join("x") + "] " + entradaV.dtype);
+        await testarEntrada("QUADRO REAL DO VÍDEO", entradaV);
+      } finally {
+        entradaV.dispose();
+      }
+    } else {
+      L("\n(Quadro real não testado: carregue um vídeo e aguarde 'Vídeo pronto'.)");
+    }
+
+    L("\nINTERPRETAÇÃO:\n" +
+      "• Falha só em execução k>1 → problema de estado/descarte entre inferências.\n" +
+      "• Falha só com quadro real → problema dependente da entrada.\n" +
+      "• Falha também com zeros na execução 1 → problema do grafo/pesos/versão.\n" +
+      "• Shards DIVERGENTES → arquivo truncado/errado no deploy.\n" +
+      "Copie este relatório inteiro e envie para análise.");
+
+    setStatus("Diagnóstico concluído.", "success");
+
+  } catch (error) {
+    console.error(error);
+    setStatus("Erro no diagnóstico: " + error.message, "error");
+    L("\nERRO: " + (error.stack || error.message));
+  } finally {
+    diagButton.disabled = !model;
+    startButton.disabled = !model || !video.src;
+  }
+}
+
 // --------------------------------------------------
 // BOTÕES
 // --------------------------------------------------
 
 startButton.addEventListener("click", analisarVideo);
+diagButton.addEventListener("click", diagnosticarGrafo);
 
 stopButton.addEventListener("click", function() {
   interromper = true;
