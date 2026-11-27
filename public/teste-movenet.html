@@ -140,12 +140,18 @@ td,th{padding:7px;border-bottom:1px solid #40515e;text-align:left}
       runBtn.disabled = !selectedImage;
 
     } catch (error) {
-      statusEl.className = "status error";
-      statusEl.textContent =
-        "FALHA NO CARREGAMENTO:\n" + error.message +
-        "\n\nConfira a pasta /movenet-tfjs/ e os arquivos do modelo.";
-    }
-  }
+  console.error("MACLINK VISION — ERRO COMPLETO:", error);
+
+  resultEl.textContent =
+    "ERRO NA INFERÊNCIA:\n" +
+    (error.stack || error.message);
+
+  statusEl.className = "status error";
+  statusEl.textContent =
+    "Falha na execução.\n" +
+    "Entrada do modelo: " +
+    JSON.stringify(model.inputs);
+}
 
   photoEl.addEventListener("change", () => {
     const file = photoEl.files && photoEl.files[0];
