@@ -335,8 +335,18 @@ async function detectarPontos(source) {
 console.log("MACLINK MODEL INPUTS:", model.inputs);
 console.log("MACLINK MODEL OUTPUTS:", model.outputs);
 
-   outputResult = model.execute(inputTensor);
+console.log("MACLINK — INÍCIO DA EXECUÇÃO");
+console.log("ENTRADA:", inputTensor.shape);
+console.log("MODELO:", model.inputs);
+console.log("SAÍDAS:", model.outputs);
 
+try {
+  outputResult = model.execute(inputTensor);
+  console.log("MACLINK — EXECUÇÃO CONCLUÍDA", outputResult);
+} catch (erro) {
+  console.error("MACLINK — FALHA DENTRO DO MODELO", erro);
+  throw erro;
+}
     var saida = Array.isArray(outputResult)
       ? outputResult[0]
       : outputResult;
