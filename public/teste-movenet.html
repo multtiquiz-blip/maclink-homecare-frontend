@@ -403,7 +403,13 @@ function desenharEsqueleto(keypoints, w, h) {
 // ANÁLISE DE POSIÇÃO CORPORAL
 // --------------------------------------------------
 
-function analisarPostura(keypoints) {
+// largura/altura: dimensões reais do quadro em pixels. As coordenadas do MoveNet
+// são normalizadas (0–1) em x e y separadamente; para obter o ângulo real é preciso
+// voltar a pixels antes do atan2. Sem dimensões, mantém o comportamento antigo (1×1).
+function analisarPostura(keypoints, largura, altura) {
+  var larg = largura > 0 ? largura : 1;
+  var alt = altura > 0 ? altura : 1;
+
   var ombroEsq = keypoints[5];
   var ombroDir = keypoints[6];
   var quadrilEsq = keypoints[11];
@@ -439,7 +445,8 @@ function analisarPostura(keypoints) {
   var dx = quadrilX - ombroX;
   var dy = quadrilY - ombroY;
 
-  var inclinacao = Math.atan2(dx, dy) * 180 / Math.PI;
+  // dx e dy em pixels (e não em unidades normalizadas)
+  var inclinacao = Math.atan2(dx * larg, dy * alt) * 180 / Math.PI;
 
   return {
     confianca: confianca,
@@ -655,7 +662,7 @@ async function analisarVideo() {
         video.videoHeight
       );
 
-      var postura = analisarPostura(keypoints);
+      var postura = analisarPostura(keypoints, video.videoWidth, video.videoHeight);
 
       resultadosVideo.push({
         tempo: tempo,
