@@ -1,195 +1,833 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MacLink Vision — Teste MoveNet</title>
+
 <style>
-  body { font-family: system-ui, sans-serif; background: #0d1f1c; color: #e0f2ee; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-  h1 { color: #6fb3a6; margin: 0; font-size: 22px; }
-  .status { padding: 10px 16px; border-radius: 8px; font-weight: 600; text-align: center; width: 100%; max-width: 600px; }
-  .status.loading { background: #1a3a35; color: #6fb3a6; }
-  .status.success { background: #1b4a3a; color: #6fdfa6; }
-  .status.error { background: #4a1b1b; color: #f9a0a0; }
-  #result { background: #142a26; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-width: 600px; min-height: 100px; width: 100%; }
-  #canvasWrap { position: relative; max-width: 600px; width: 100%; }
-  #canvas { width: 100%; border-radius: 12px; background: #000; display: block; }
-  input[type="file"] { color: #e0f2ee; }
-  button { background: #1a7365; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
+body {
+  font-family: system-ui, sans-serif;
+  background: #0d1f1c;
+  color: #e0f2ee;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+h1 { color: #6fb3a6; margin: 0; font-size: 22px; }
+
+h2 { font-size: 17px; margin-top: 0; }
+
+.status {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+  max-width: 650px;
+  box-sizing: border-box;
+}
+
+.status.loading { background: #1a3a35; color: #6fb3a6; }
+.status.success { background: #1b4a3a; color: #6fdfa6; }
+.status.error { background: #4a1b1b; color: #f9a0a0; }
+
+.panel {
+  background: #142a26;
+  padding: 16px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 650px;
+  box-sizing: border-box;
+}
+
+input[type="file"] {
+  color: #e0f2ee;
+  max-width: 100%;
+}
+
+button {
+  background: #1a7365;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 5px 3px 5px 0;
+}
+
+button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+button.stop { background: #8b3838; }
+
+#canvasWrap {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+}
+
+#canvas {
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+  display: block;
+}
+
+#result {
+  background: #142a26;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  width: 100%;
+  max-width: 650px;
+  box-sizing: border-box;
+  min-height: 100px;
+}
+
+progress {
+  width: 100%;
+  height: 18px;
+  accent-color: #35c99b;
+}
+
+.small {
+  color: #9bbdb4;
+  font-size: 13px;
+}
+
+#videoInfo {
+  color: #a9d4c9;
+  font-size: 13px;
+}
+
+#video {
+  display: none;
+}
 </style>
+
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
 </head>
+
 <body>
+
 <h1>MacLink Vision — Teste MoveNet</h1>
-<div id="status" class="status loading">Carregando TensorFlow.js...</div>
-<input type="file" id="fileInput" accept="image/*" disabled>
-<div id="canvasWrap"><canvas id="canvas"></canvas></div>
-<div id="result">Aguardando modelo...</div>
+
+<div id="status" class="status loading">
+Carregando TensorFlow.js...
+</div>
+
+<section class="panel">
+  <h2>1. Teste por imagem</h2>
+  <input type="file" id="fileInput" accept="image/*" disabled>
+</section>
+
+<section class="panel">
+  <h2>2. Análise de vídeo</h2>
+
+  <input type="file" id="videoInput" accept="video/*" disabled>
+
+  <p id="videoInfo" class="small">
+    Selecione um vídeo do computador.
+  </p>
+
+  <p class="small">
+    Amostragem: 4 quadros por segundo (intervalo de 0,25 segundo).
+  </p>
+
+  <progress id="progress" value="0" max="100"></progress>
+
+  <div>
+    <button id="startVideo" disabled>INICIAR ANÁLISE</button>
+    <button id="stopVideo" class="stop" disabled>PARAR</button>
+  </div>
+</section>
+
+<div id="canvasWrap">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div id="result">
+Aguardando carregamento do modelo...
+</div>
+
+<video id="video" muted playsinline preload="auto"></video>
 
 <script>
 (function() {
-  "use strict";
+"use strict";
 
-  var statusEl = document.getElementById("status");
-  var resultEl = document.getElementById("result");
-  var fileInput = document.getElementById("fileInput");
-  var canvas = document.getElementById("canvas");
-  var ctx = canvas.getContext("2d");
+// --------------------------------------------------
+// ELEMENTOS
+// --------------------------------------------------
 
-  var model = null;
+var statusEl = document.getElementById("status");
+var resultEl = document.getElementById("result");
+var fileInput = document.getElementById("fileInput");
+var videoInput = document.getElementById("videoInput");
+var videoInfo = document.getElementById("videoInfo");
+var startButton = document.getElementById("startVideo");
+var stopButton = document.getElementById("stopVideo");
+var progress = document.getElementById("progress");
 
-  // Modelo oficial do TF Hub/Kaggle — convertido com Converter v3.6.0 (compatível)
-  // Fallback local: "/model.json" (convertido com v4.17.0 — pode falhar)
-  var MODEL_URL = "https://www.kaggle.com/models/google/movenet/frameworks/tfJs/variations/singlepose-lightning/versions/4/model.json?tfjs-format=file";
+var video = document.getElementById("video");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
 
-  var KEYPOINTS = ["nariz","olho_esq","olho_dir","orelha_esq","orelha_dir","ombro_esq","ombro_dir","cotovelo_esq","cotovelo_dir","pulso_esq","pulso_dir","quadril_esq","quadril_dir","joelho_esq","joelho_dir","tornozelo_esq","tornozelo_dir"];
-  var CONEXOES = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+var model = null;
+var videoURL = null;
+var analisando = false;
+var interromper = false;
+var resultadosVideo = [];
 
-  function setStatus(msg, tipo) { statusEl.textContent = msg; statusEl.className = "status " + (tipo || "loading"); }
-  function setResult(msg) { resultEl.textContent = msg; }
+var INTERVALO = 0.25;
+var LIMIAR = 0.30;
 
-  // ---------- CARREGAMENTO ----------
-  async function carregarModelo() {
-    try {
-      setStatus("Carregando TensorFlow.js...", "loading");
-      await tf.ready();
-      setStatus("TensorFlow.js pronto. Backend: " + tf.getBackend(), "loading");
+// --------------------------------------------------
+// MODELO LOCAL
+// --------------------------------------------------
 
-      setStatus("Carregando modelo MoveNet oficial...", "loading");
-      model = await tf.loadGraphModel(MODEL_URL);
+var MODEL_URL = "/model.json";
 
-      if (!model) throw new Error("loadGraphModel retornou nulo.");
+// --------------------------------------------------
+// PONTOS DO CORPO
+// --------------------------------------------------
 
-      setStatus("Modelo carregado. Backend: " + tf.getBackend() + ". Selecione uma imagem.", "success");
-      fileInput.disabled = false;
+var KEYPOINTS = [
+  "nariz","olho_esq","olho_dir","orelha_esq","orelha_dir",
+  "ombro_esq","ombro_dir","cotovelo_esq","cotovelo_dir",
+  "pulso_esq","pulso_dir","quadril_esq","quadril_dir",
+  "joelho_esq","joelho_dir","tornozelo_esq","tornozelo_dir"
+];
 
-      var info = "Entrada: " + JSON.stringify(model.inputs ? model.inputs.map(function(i){return {name:i.name, shape:i.shape, dtype:i.dtype};}) : "?") + "\n";
-      info += "Saída: " + JSON.stringify(model.outputs ? model.outputs.map(function(o){return {name:o.name, shape:o.shape, dtype:o.dtype};}) : "?");
-      setResult(info);
+var CONEXOES = [
+  [0,1],[0,2],[1,3],[2,4],
+  [5,6],[5,7],[7,9],[6,8],[8,10],
+  [5,11],[6,12],[11,12],
+  [11,13],[13,15],[12,14],[14,16]
+];
 
-    } catch (error) {
-      console.error("Erro ao carregar modelo:", error);
-      setStatus("Falha ao carregar o modelo: " + error.message, "error");
-      setResult("Erro completo:\n" + (error.stack || error.message));
+// --------------------------------------------------
+// INTERFACE
+// --------------------------------------------------
+
+function setStatus(msg, tipo) {
+  statusEl.textContent = msg;
+  statusEl.className = "status " + (tipo || "loading");
+}
+
+function setResult(msg) {
+  resultEl.textContent = msg;
+}
+
+// --------------------------------------------------
+// CARREGAMENTO DO MODELO
+// --------------------------------------------------
+
+async function carregarModelo() {
+  try {
+    setStatus("Carregando TensorFlow.js...", "loading");
+
+    await tf.ready();
+
+    setStatus(
+      "TensorFlow.js pronto. Backend: " + tf.getBackend(),
+      "loading"
+    );
+
+    setStatus("Carregando MoveNet local...", "loading");
+
+    model = await tf.loadGraphModel(MODEL_URL);
+
+    if (!model) {
+      throw new Error("Modelo não carregado.");
     }
+
+    fileInput.disabled = false;
+    videoInput.disabled = false;
+
+    setStatus(
+      "Modelo carregado com sucesso. Backend: " + tf.getBackend(),
+      "success"
+    );
+
+    setResult(
+      "Modelo local carregado.\n" +
+      "Entrada: " + JSON.stringify(model.inputs.map(function(i) {
+        return {name:i.name, shape:i.shape, dtype:i.dtype};
+      })) + "\n" +
+      "Saída: " + JSON.stringify(model.outputs.map(function(o) {
+        return {name:o.name, shape:o.shape, dtype:o.dtype};
+      })) +
+      "\n\nSelecione uma imagem ou um vídeo."
+    );
+
+  } catch (error) {
+    console.error(error);
+    setStatus("Falha ao carregar modelo: " + error.message, "error");
+    setResult(error.stack || error.message);
+  }
+}
+
+// --------------------------------------------------
+// PREPARAÇÃO DA IMAGEM OU QUADRO DE VÍDEO
+// --------------------------------------------------
+
+function prepararImagem(source) {
+  var largura = source.videoWidth || source.naturalWidth || source.width;
+  var altura = source.videoHeight || source.naturalHeight || source.height;
+
+  if (!largura || !altura) {
+    throw new Error("Não foi possível obter as dimensões da imagem.");
   }
 
-  // ---------- PRÉ-PROCESSAMENTO ----------
-  function prepararImagem(img) {
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
+  canvas.width = largura;
+  canvas.height = altura;
 
-    var tensor = tf.browser.fromPixels(img); // [H, W, 3] int32 RGB
-    var resized = tf.image.resizeBilinear(tensor, [192, 192], true).toInt(); // [192, 192, 3] int32
-    var batched = resized.expandDims(0); // [1, 192, 192, 3]
-    tensor.dispose();
-    resized.dispose();
-    return batched;
-  }
+  ctx.drawImage(source, 0, 0, largura, altura);
 
-  // ---------- INFERÊNCIA ----------
-  async function executarInferencia(img) {
-    if (!model) { setStatus("Modelo não carregado.", "error"); return; }
+  var tensor = tf.browser.fromPixels(source);
 
-    setStatus("Executando inferência...", "loading");
+  var resized = tf.image.resizeBilinear(
+    tensor,
+    [192, 192],
+    true
+  ).toInt();
 
-    var inputTensor = null;
-    var outputTensor = null;
+  var batched = resized.expandDims(0);
 
-    try {
-      inputTensor = prepararImagem(img);
+  tensor.dispose();
+  resized.dispose();
 
-      // executeAsync é necessário para grafos com operações de controle dinâmico
-      outputTensor = await model.executeAsync(inputTensor);
+  return batched;
+}
 
-      // Se retornar array, pegar o primeiro
-      if (Array.isArray(outputTensor)) {
-        outputTensor = outputTensor[0];
-      }
+// --------------------------------------------------
+// INFERÊNCIA
+// --------------------------------------------------
 
-      // Verificar rank
-      if (outputTensor.rank === null || outputTensor.rank === undefined) {
-        throw new Error("Saída com rank nulo. Modelo incompatível.");
-      }
+async function detectarPontos(source) {
+  var inputTensor = null;
+  var outputResult = null;
+  var outputTensor = null;
+  var flatTensor = null;
 
-      // Achatar e extrair 51 valores (17 × 3)
-      var flat = outputTensor.flatten().arraySync();
-      if (flat.length < 51) {
-        throw new Error("Saída com menos de 51 valores. Tamanho: " + flat.length);
-      }
+  try {
+    inputTensor = prepararImagem(source);
 
-      var keypoints = [];
-      for (var i = 0; i < 17; i++) {
-        keypoints.push([flat[i*3], flat[i*3+1], flat[i*3+2]]);
-      }
+    outputResult = await model.executeAsync(inputTensor);
 
-      desenharEsqueleto(keypoints, img.width, img.height);
+    var saida = Array.isArray(outputResult)
+      ? outputResult[0]
+      : outputResult;
 
-      var linhas = [];
-      for (var j = 0; j < keypoints.length; j++) {
-        var kp = keypoints[j];
-        linhas.push(KEYPOINTS[j].padEnd(14) + " y=" + kp[0].toFixed(3) + " x=" + kp[1].toFixed(3) + " score=" + kp[2].toFixed(3));
-      }
-      setResult("17 keypoints detectados:\n\n" + linhas.join("\n"));
-      setStatus("Inferência concluída com sucesso.", "success");
-
-    } catch (error) {
-      console.error("Erro na inferência:", error);
-      setStatus("Erro na inferência: " + error.message, "error");
-      setResult("Erro completo:\n" + (error.stack || error.message));
-    } finally {
-      if (inputTensor) inputTensor.dispose();
-      if (outputTensor) outputTensor.dispose();
+    if (!saida || !saida.rank) {
+      throw new Error("Saída inválida do modelo.");
     }
+
+    outputTensor = saida;
+    flatTensor = outputTensor.flatten();
+
+    var flat = flatTensor.dataSync();
+
+    if (flat.length < 51) {
+      throw new Error(
+        "Saída incompleta: " + flat.length + " valores."
+      );
+    }
+
+    var keypoints = [];
+
+    for (var i = 0; i < 17; i++) {
+      keypoints.push([
+        flat[i * 3],
+        flat[i * 3 + 1],
+        flat[i * 3 + 2]
+      ]);
+    }
+
+    return keypoints;
+
+  } finally {
+    if (flatTensor) flatTensor.dispose();
+
+    if (Array.isArray(outputResult)) {
+      outputResult.forEach(function(t) {
+        if (t && typeof t.dispose === "function") t.dispose();
+      });
+    } else if (outputResult) {
+      outputResult.dispose();
+    }
+
+    if (inputTensor) inputTensor.dispose();
   }
+}
 
-  // ---------- DESENHO ----------
-  function desenharEsqueleto(keypoints, w, h) {
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#00ffcc";
-    ctx.fillStyle = "#ff0066";
+// --------------------------------------------------
+// DESENHO DO ESQUELETO
+// --------------------------------------------------
 
-    CONEXOES.forEach(function(par) {
-      var a = keypoints[par[0]];
-      var b = keypoints[par[1]];
-      if (a[2] > 0.3 && b[2] > 0.3) {
-        ctx.beginPath();
-        ctx.moveTo(a[1] * w, a[0] * h);
-        ctx.lineTo(b[1] * w, b[0] * h);
-        ctx.stroke();
-      }
-    });
+function desenharEsqueleto(keypoints, w, h) {
+  ctx.lineWidth = Math.max(2, w / 250);
+  ctx.strokeStyle = "#00ffcc";
+  ctx.fillStyle = "#ff0066";
 
-    keypoints.forEach(function(kp) {
-      if (kp[2] > 0.3) {
-        ctx.beginPath();
-        ctx.arc(kp[1] * w, kp[0] * h, 5, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    });
-  }
+  CONEXOES.forEach(function(par) {
+    var a = keypoints[par[0]];
+    var b = keypoints[par[1]];
 
-  // ---------- EVENTO ----------
-  fileInput.addEventListener("change", function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var img = new Image();
-    img.onload = function() { executarInferencia(img); };
-    img.onerror = function() { setStatus("Erro ao carregar a imagem.", "error"); };
-    img.src = URL.createObjectURL(file);
+    if (a[2] > LIMIAR && b[2] > LIMIAR) {
+      ctx.beginPath();
+      ctx.moveTo(a[1] * w, a[0] * h);
+      ctx.lineTo(b[1] * w, b[0] * h);
+      ctx.stroke();
+    }
   });
 
-  // ---------- INICIALIZAÇÃO ----------
-  if (typeof tf === "undefined") {
-    setStatus("TensorFlow.js não foi carregado. Verifique o CDN.", "error");
-    setResult("A tag <script> do TensorFlow.js falhou.");
-  } else {
-    carregarModelo();
+  keypoints.forEach(function(kp) {
+    if (kp[2] > LIMIAR) {
+      ctx.beginPath();
+      ctx.arc(kp[1] * w, kp[0] * h, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  });
+}
+
+// --------------------------------------------------
+// ANÁLISE DE POSIÇÃO CORPORAL
+// --------------------------------------------------
+
+function analisarPostura(keypoints) {
+  var ombroEsq = keypoints[5];
+  var ombroDir = keypoints[6];
+  var quadrilEsq = keypoints[11];
+  var quadrilDir = keypoints[12];
+
+  var pontosPrincipais = [
+    ombroEsq, ombroDir, quadrilEsq, quadrilDir
+  ];
+
+  var validos = pontosPrincipais.filter(function(p) {
+    return p[2] >= LIMIAR;
+  });
+
+  if (validos.length < 3) {
+    return {
+      confianca: 0,
+      quadrilY: null,
+      inclinacao: null,
+      valido: false
+    };
   }
+
+  var confianca = validos.reduce(function(soma, p) {
+    return soma + p[2];
+  }, 0) / validos.length;
+
+  var ombroY = (ombroEsq[0] + ombroDir[0]) / 2;
+  var ombroX = (ombroEsq[1] + ombroDir[1]) / 2;
+
+  var quadrilY = (quadrilEsq[0] + quadrilDir[0]) / 2;
+  var quadrilX = (quadrilEsq[1] + quadrilDir[1]) / 2;
+
+  var dx = quadrilX - ombroX;
+  var dy = quadrilY - ombroY;
+
+  var inclinacao = Math.atan2(dx, dy) * 180 / Math.PI;
+
+  return {
+    confianca: confianca,
+    quadrilY: quadrilY,
+    inclinacao: inclinacao,
+    valido: true
+  };
+}
+
+// --------------------------------------------------
+// TESTE POR IMAGEM
+// --------------------------------------------------
+
+async function executarImagem(img) {
+  if (!model) return;
+
+  try {
+    setStatus("Executando análise da imagem...", "loading");
+
+    var keypoints = await detectarPontos(img);
+
+    desenharEsqueleto(keypoints, canvas.width, canvas.height);
+
+    var linhas = [];
+
+    for (var i = 0; i < keypoints.length; i++) {
+      var kp = keypoints[i];
+
+      linhas.push(
+        KEYPOINTS[i].padEnd(14) +
+        " y=" + kp[0].toFixed(3) +
+        " x=" + kp[1].toFixed(3) +
+        " score=" + kp[2].toFixed(3)
+      );
+    }
+
+    setResult("17 keypoints detectados:\n\n" + linhas.join("\n"));
+
+    setStatus("Inferência concluída com sucesso.", "success");
+
+  } catch (error) {
+    console.error(error);
+    setStatus("Erro na imagem: " + error.message, "error");
+    setResult(error.stack || error.message);
+  }
+}
+
+fileInput.addEventListener("change", function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+
+  var img = new Image();
+
+  img.onload = function() {
+    executarImagem(img);
+    URL.revokeObjectURL(img.src);
+  };
+
+  img.onerror = function() {
+    setStatus("Erro ao carregar imagem.", "error");
+  };
+
+  img.src = URL.createObjectURL(file);
+});
+
+// --------------------------------------------------
+// SELEÇÃO DO VÍDEO
+// --------------------------------------------------
+
+videoInput.addEventListener("change", function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+
+  if (videoURL) URL.revokeObjectURL(videoURL);
+
+  videoURL = URL.createObjectURL(file);
+
+  video.src = videoURL;
+  video.load();
+
+  startButton.disabled = true;
+  progress.value = 0;
+  resultadosVideo = [];
+
+  videoInfo.textContent = "Carregando vídeo...";
+
+  video.onloadedmetadata = function() {
+    var duracao = video.duration;
+
+    if (!Number.isFinite(duracao) || duracao <= 0) {
+      videoInfo.textContent = "Duração do vídeo inválida.";
+      return;
+    }
+
+    videoInfo.textContent =
+      "Vídeo: " + file.name +
+      " | Duração: " + duracao.toFixed(2) + " segundos" +
+      " | Resolução: " + video.videoWidth + " × " + video.videoHeight;
+
+    startButton.disabled = !model;
+    setStatus("Vídeo pronto para análise.", "success");
+  };
+
+  video.onerror = function() {
+    videoInfo.textContent = "Não foi possível abrir esse vídeo.";
+    setStatus("Erro ao carregar vídeo.", "error");
+  };
+});
+
+// --------------------------------------------------
+// POSICIONAR O VÍDEO EM UM INSTANTE
+// --------------------------------------------------
+
+function aguardarSeek(tempo) {
+  return new Promise(function(resolve, reject) {
+    if (Math.abs(video.currentTime - tempo) < 0.001) {
+      resolve();
+      return;
+    }
+
+    function sucesso() {
+      limpar();
+      resolve();
+    }
+
+    function erro() {
+      limpar();
+      reject(new Error("Falha ao acessar quadro do vídeo."));
+    }
+
+    function limpar() {
+      video.removeEventListener("seeked", sucesso);
+      video.removeEventListener("error", erro);
+    }
+
+    video.addEventListener("seeked", sucesso, {once:true});
+    video.addEventListener("error", erro, {once:true});
+
+    video.currentTime = tempo;
+  });
+}
+
+// --------------------------------------------------
+// ANÁLISE TEMPORAL DO VÍDEO
+// --------------------------------------------------
+
+async function analisarVideo() {
+  if (!model || !video.src || analisando) return;
+
+  analisando = true;
+  interromper = false;
+  resultadosVideo = [];
+
+  startButton.disabled = true;
+  stopButton.disabled = false;
+  fileInput.disabled = true;
+  videoInput.disabled = true;
+
+  progress.value = 0;
+
+  var duracao = video.duration;
+  var totalQuadros = Math.ceil(duracao / INTERVALO);
+
+  video.pause();
+
+  try {
+    setStatus("Iniciando análise temporal...", "loading");
+
+    for (var i = 0; i < totalQuadros; i++) {
+      if (interromper) break;
+
+      var tempo = Math.min(i * INTERVALO, duracao);
+
+      await aguardarSeek(tempo);
+
+      if (interromper) break;
+
+      var keypoints = await detectarPontos(video);
+
+      desenharEsqueleto(
+        keypoints,
+        video.videoWidth,
+        video.videoHeight
+      );
+
+      var postura = analisarPostura(keypoints);
+
+      resultadosVideo.push({
+        tempo: tempo,
+        keypoints: keypoints,
+        confianca: postura.confianca,
+        quadrilY: postura.quadrilY,
+        inclinacao: postura.inclinacao,
+        valido: postura.valido
+      });
+
+      progress.value = Math.min(
+        100,
+        ((i + 1) / totalQuadros) * 100
+      );
+
+      setStatus(
+        "Analisando vídeo: " +
+        (i + 1) + " de " + totalQuadros +
+        " quadros | " + tempo.toFixed(2) + " s",
+        "loading"
+      );
+
+      // Atualiza o painel periodicamente
+      if (i % 4 === 0 || i === totalQuadros - 1) {
+        mostrarResumoParcial();
+      }
+
+      // Libera o navegador entre as inferências
+      await new Promise(function(resolve) {
+        setTimeout(resolve, 0);
+      });
+    }
+
+    if (interromper) {
+      setStatus("Análise interrompida pelo usuário.", "error");
+    } else {
+      setStatus("Análise do vídeo concluída.", "success");
+    }
+
+    mostrarRelatorioFinal();
+
+  } catch (error) {
+    console.error(error);
+    setStatus("Erro na análise: " + error.message, "error");
+    setResult(error.stack || error.message);
+
+  } finally {
+    analisando = false;
+
+    startButton.disabled = !model || !video.src;
+    stopButton.disabled = true;
+    fileInput.disabled = !model;
+    videoInput.disabled = !model;
+  }
+}
+
+// --------------------------------------------------
+// RESUMO DURANTE A ANÁLISE
+// --------------------------------------------------
+
+function mostrarResumoParcial() {
+  var total = resultadosVideo.length;
+
+  if (!total) return;
+
+  var ultimo = resultadosVideo[total - 1];
+
+  setResult(
+    "ANÁLISE TEMPORAL EM ANDAMENTO\n\n" +
+    "Quadros analisados: " + total + "\n" +
+    "Tempo do vídeo: " + ultimo.tempo.toFixed(2) + " s\n" +
+    "Confiança corporal: " + ultimo.confianca.toFixed(3) + "\n" +
+    "Altura relativa do quadril: " +
+      (ultimo.quadrilY === null ? "Indisponível" : ultimo.quadrilY.toFixed(3)) + "\n" +
+    "Inclinação do tronco: " +
+      (ultimo.inclinacao === null ? "Indisponível" : ultimo.inclinacao.toFixed(1) + "°") +
+    "\n\nÚltimos registros:\n" +
+    gerarLinhasRegistros(8)
+  );
+}
+
+// --------------------------------------------------
+// REGISTROS RESUMIDOS
+// --------------------------------------------------
+
+function gerarLinhasRegistros(limite) {
+  var inicio = Math.max(0, resultadosVideo.length - limite);
+  var linhas = [];
+
+  for (var i = inicio; i < resultadosVideo.length; i++) {
+    var r = resultadosVideo[i];
+
+    linhas.push(
+      r.tempo.toFixed(2) + "s" +
+      " | confiança: " + r.confianca.toFixed(2) +
+      " | quadril Y: " +
+      (r.quadrilY === null ? "--" : r.quadrilY.toFixed(3)) +
+      " | tronco: " +
+      (r.inclinacao === null ? "--" : r.inclinacao.toFixed(1) + "°")
+    );
+  }
+
+  return linhas.join("\n");
+}
+
+// --------------------------------------------------
+// RELATÓRIO FINAL
+// --------------------------------------------------
+
+function mostrarRelatorioFinal() {
+  var total = resultadosVideo.length;
+
+  if (!total) {
+    setResult("Nenhum quadro foi analisado.");
+    return;
+  }
+
+  var validos = resultadosVideo.filter(function(r) {
+    return r.valido;
+  });
+
+  var mediaConfianca = 0;
+
+  if (validos.length) {
+    mediaConfianca = validos.reduce(function(soma, r) {
+      return soma + r.confianca;
+    }, 0) / validos.length;
+  }
+
+  var alturas = validos
+    .filter(function(r) { return r.quadrilY !== null; })
+    .map(function(r) { return r.quadrilY; });
+
+  var inclinacoes = validos
+    .filter(function(r) { return r.inclinacao !== null; })
+    .map(function(r) { return r.inclinacao; });
+
+  var minAltura = alturas.length ? Math.min.apply(null, alturas) : null;
+  var maxAltura = alturas.length ? Math.max.apply(null, alturas) : null;
+
+  var minAngulo = inclinacoes.length ? Math.min.apply(null, inclinacoes) : null;
+  var maxAngulo = inclinacoes.length ? Math.max.apply(null, inclinacoes) : null;
+
+  var texto =
+    "RELATÓRIO DA ANÁLISE DE VÍDEO\n\n" +
+    "Quadros analisados: " + total + "\n" +
+    "Quadros com pontos corporais suficientes: " + validos.length + "\n" +
+    "Duração coberta: " +
+      resultadosVideo[total - 1].tempo.toFixed(2) + " s\n" +
+    "Intervalo: " + INTERVALO + " s\n\n" +
+
+    "CONFIANÇA MÉDIA: " + mediaConfianca.toFixed(3) + "\n" +
+
+    "QUADRIL — COORDENADA Y:\n" +
+    "Mínima: " + (minAltura === null ? "--" : minAltura.toFixed(3)) + "\n" +
+    "Máxima: " + (maxAltura === null ? "--" : maxAltura.toFixed(3)) + "\n\n" +
+
+    "INCLINAÇÃO DO TRONCO:\n" +
+    "Mínima: " + (minAngulo === null ? "--" : minAngulo.toFixed(1) + "°") + "\n" +
+    "Máxima: " + (maxAngulo === null ? "--" : maxAngulo.toFixed(1) + "°") + "\n\n" +
+
+    "REGISTROS RECENTES:\n" +
+    gerarLinhasRegistros(20) +
+
+    "\n\nOBSERVAÇÃO:\n" +
+    "Este relatório registra pontos e variações corporais. " +
+    "Ainda não classifica quedas nem substitui avaliação humana.";
+
+  setResult(texto);
+}
+
+// --------------------------------------------------
+// BOTÕES
+// --------------------------------------------------
+
+startButton.addEventListener("click", analisarVideo);
+
+stopButton.addEventListener("click", function() {
+  interromper = true;
+  video.pause();
+  setStatus("Solicitando interrupção...", "loading");
+});
+
+// --------------------------------------------------
+// INICIALIZAÇÃO
+// --------------------------------------------------
+
+if (typeof tf === "undefined") {
+  setStatus("TensorFlow.js não foi carregado. Verifique o CDN.", "error");
+  setResult("A biblioteca TensorFlow.js não está disponível.");
+} else {
+  carregarModelo();
+}
 
 })();
 </script>
+
 </body>
 </html>
