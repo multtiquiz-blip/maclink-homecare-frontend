@@ -1,0 +1,97 @@
+{
+  "versao": "1.0-experimental",
+  "data": "2026-11-28",
+  "aviso": "Parâmetros experimentais calibrados com 5 vídeos. Não são clínicos. Ajustar com mais dados.",
+
+  "janela": {
+    "frames_maximo": 80,
+    "frames_minimo_para_decisao": 8,
+    "tempo_maximo_segundos": 20
+  },
+
+  "confianca": {
+    "keypoint_minimo": 0.30,
+    "keypoints_minimos_por_frame": 3,
+    "perda_tracking_frames_consecutivos": 3,
+    "perda_tracking_entra_no_score": true
+  },
+
+  "sinais": {
+    "direcao_quadril": {
+      "peso": 3,
+      "descricao": "Queda = quadril desce (Y aumenta). Levantar = quadril sobe (Y diminui).",
+      "limiar_queda": 0.04,
+      "limiar_estavel": 0.02
+    },
+    "velocidade_queda_quadril": {
+      "peso": 2,
+      "descricao": "ΔY/Δt normalizado por altura da imagem.",
+      "limiar_suspeito": 0.08,
+      "limiar_critico": 0.15
+    },
+    "angulo_tronco": {
+      "peso": 2,
+      "descricao": "Ângulo com correção de aspect ratio (atan2(dx·w, dy·h)).",
+      "limiar_atencao_graus": 40,
+      "limiar_suspeito_graus": 60,
+      "limiar_critico_graus": 75
+    },
+    "persistencia_angulo": {
+      "peso": 2,
+      "descricao": "Ângulo elevado por tempo contínuo separa queda de movimento transitório.",
+      "tempo_minimo_segundos": 1.5,
+      "tempo_critico_segundos": 2.5
+    },
+    "persistencia_baixa": {
+      "peso": 3,
+      "descricao": "Quadril permanece na parte baixa do quadro.",
+      "quadril_y_minimo": 0.60,
+      "tempo_minimo_segundos": 2.0,
+      "tempo_critico_segundos": 4.0
+    },
+    "perda_tracking": {
+      "peso": 1,
+      "descricao": "Perda de keypoints por vários frames. Sinal fraco sozinho, forte em combinação.",
+      "frames_minimo": 3,
+      "tempo_minimo_segundos": 0.5
+    }
+  },
+
+  "classificacao": {
+    "estagio_0_normal": { "score_maximo": 2 },
+    "estagio_1_observar": { "score_minimo": 3, "score_maximo": 5, "acao": "nenhuma" },
+    "estagio_2_verificar": { "score_minimo": 6, "acao": "solicitar_verificacao_cuidador" },
+    "estagio_3_emergencia": { "habilitado": false, "descricao": "Nunca acionado automaticamente. Só manual ou por fonte externa." }
+  },
+
+  "mensagens": {
+    "estagio_2": "Por favor, verifique o idoso. Foi observada uma alteração importante em sua movimentação.",
+    "estagio_3": "Verificação imediata solicitada."
+  },
+
+  "contexto": {
+    "considerar_cama": true,
+    "descricao_cama": "Movimento de deitado para sentado: quadril SOBE, ângulo pode chegar a 48°, não é queda.",
+    "reduzir_score_se_quadril_sobe": true,
+    "fator_reducao_contexto_normal": 0.5
+  },
+
+  "falsos_positivos_conhecidos": [
+    "Deitado para sentado na cama (quadril sobe)",
+    "Levantar do sofá/cadeira (quadril sobe)",
+    "Espreguiçar (variação alta, mas quadril pode oscilar sem direção clara)",
+    "Alimentação (movimento de mãos, tronco estável)",
+    "Coçar pescoço (movimento de braço, tronco estável)"
+  ],
+
+  "calibracao": {
+    "videos_usados": [
+      { "id": "sofa_sentado", "quadril_dir": "oscila", "angulo_max": 23.8, "classificacao_correta": "normal" },
+      { "id": "queda_em_pe", "quadril_dir": "desce", "angulo_max": 78.6, "classificacao_correta": "verificar" },
+      { "id": "levantar_sofa", "quadril_dir": "sobe", "angulo_max": 3.7, "classificacao_correta": "normal" },
+      { "id": "levantar_cadeira", "quadril_dir": "sobe", "angulo_max": 37.9, "classificacao_correta": "normal" },
+      { "id": "cama_deitado_sentado", "quadril_dir": "sobe", "angulo_max": 47.7, "classificacao_correta": "normal" }
+    ],
+    "observacao": "Score deve ser baixo (≤ 2) nos 4 movimentos normais e alto (≥ 6) na queda."
+  }
+}
